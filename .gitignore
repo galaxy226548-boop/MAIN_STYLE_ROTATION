@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+
+# Python virtual environments
+.venv/
+venv/
+env/
+.venv_mktp/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Build/cache/temp
+.cache/
+.tmp/
+temp/
+dist/
+build/
+
+# Project data / outputs
+A_data/
+E_backtesting/Result/
+D_analysis/IC_output/

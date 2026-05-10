@@ -1,0 +1,158 @@
+1. market_df
+- 母df：data_df（df_growth和df_value合并之后的结果）
+- 时间范围：
+- 频率：
+  - 日频
+- 主要列：
+  - 新列：target_return_diff
+    - market_df["target_return_diff"] = market_df["fwd_ret_g"] - market_df["fwd_ret_v"]
+  - 新列：target_label
+    - 记录了target_return_diff的符号，1为正、0为负
+
+2. daily_asset_ret_df
+- 母df：data_df
+- 时间范围：全样本数据
+- 频率：
+  - 日频
+  - 有 sort_index() : 按日期升序排列
+- 主要列：
+  - close_g,close_v
+  - 新列：ret_g_daily_simple
+    - daily_asset_ret_df["ret_g_daily_simple"] = daily_asset_ret_df["close_g"].pct_change()
+  - 新列：ret_v_daily_simple
+    - daily_asset_ret_df["ret_v_daily_simple"] = daily_asset_ret_df["close_v"].pct_change()
+    
+3. work_df
+- 母df：market_df_all
+- 时间范围：ALL_MASK + factor_available_date之后的日期
+  - work_df = market_df_all[market_df_all.index > factor_available_date].copy().sort_index()
+- 频率：
+  - 日频
+  - 有 sort_index() : 按日期升序排列
+- 主要列：
+  - track_id, FACTOR_COL, fwd_ret_g, fwd_ret_v, holding_days, target_return_diff, next_date
+  - 新列：fwd_ret_g_simple
+    - 用函数 def to_simple_return，将 fwd_ret_g 转为简单收益率
+  - 新列：fwd_ret_v_simple
+    - 用函数 def to_simple_return，将 fwd_ret_v 转为简单收益率
+  - 新列：fwd_ret_diff_simple
+    - fwd_ret_g_simple - fwd_ret_v_simple
+- 下游用途：strategy_target_df
+
+4. strategy_target_df
+- 母df：work_df
+- 时间范围：ALL_mask，但是去掉了每个轨道的最后一天（为了生成next_date和下一区间的区间收益率）
+- 频率：
+  - 日频
+  - 有sort_index()：按日期升序排列
+- 主要列：
+  - track_id, FACTOR_COL, fwd_ret_g, fwd_ret_v, holding_days, target_return_diff, fwd_ret_g_simple, fwd_ret_v_simple, fwd_ret_diff_simple, next_date
+  - 新列：target_weight_g
+    - 成长指数的目标权重，取值只能是 0.0 / 0.5 / 1.0
+    - 函数 build_state_target_position 生成
+  - 新列：target_weight_v
+    - 价值指数的目标权重，取值只能是 0.0 / 0.5 / 1.0
+    - 函数 build_state_target_position 生成
+  - 新列：signal_ls
+    - 多空方向信号，+1=全仓成长，-1=全仓价值，0=50/50中性
+    - 函数 build_state_target_position 生成
+  - 新列：signal_update_flag
+    - 策略中，signal_update_flag的作用是：当状态型函数跨期没有更新的数据时，需要维持之前的仓位/方向判断，所以需要有一个指标，和有数据但没触发买入/卖出的情况给区分开
+      - 只在触发型信号没有信息输入的时候为 0
+      - 对有值的触发型信号、状态型信号都为1
+    - 基准中，signal_update_flag储存了rebalance的发生信号，需要rebalance时为1，否则为0.
+    - 函数 build_state_target_position 生成
+- 下游用途：benchmark_target_df、track_result_df
+5. benchmark_target_df
+- 母df：strategy_target_df
+- 时间范围：ALL_mask
+- 频率：
+  - 日频
+  - 有sort_index()：按日期升序排列
+- 主要列：
+  - track_id, FACTOR_COL, fwd_ret_g_simple, fwd_ret_v_simple, holding_days, next_date
+  - 新列：target_weight_g
+    - 成长指数的目标权重，取值是0.5
+  - 新列：target_weight_v
+    - 价值指数的目标权重，取值是0.5
+  - 新列：signal_ls
+    - 多空方向信号，0=50/50中性
+  - 新列：signal_update_flag
+    - 根据 基准计算 benchmark_mode，每期都 rebalance 或不变，恒为 1
+
+6. strategy_period_df
+- 母df：strategy_target_df、各track回测结果
+- 时间范围：ALL_mask
+- 频率：
+  - 日频
+  - 有sort_index()：按日期升序排列
+- 主要列：
+  - track_id, FACTOR_COL, fwd_ret_g, fwd_ret_v, holding_days, target_return_diff, fwd_ret_g_simple, fwd_ret_v_simple, fwd_ret_diff_simple, target_weight_g, target_weight_v, signal_ls, signal_update_flag, next_date
+  - 新列：effective_signal_ls
+    - decide_post_trade_weight的函数结果
+    - 本期没有新信号：沿用上一期signal_ls
+    - 本期有新信号：引用本期signal_ls
+  - 新列：pre_trade_weight_g
+    - 首期是 0 （设定起点为空仓）
+    - calc_pre_trade_actual_weight 的函数结果，是上一期成长风格持仓权重漂移后的权重
+  - 新列：pre_trade_weight_v
+    - 首期是 0 （设定起点为空仓）
+    - calc_pre_trade_actual_weight 的函数结果，是上一期价值风格持仓权重漂移后的权重
+  - 新列：post_trade_weight_g
+    - 首期采用 target_weight_g
+    - 在信号为空仓时、连续两次状态为50-50时（且该情况设定为需调仓时），采用0.5
+    - 无信号时、连续两次状态为50-50时（且该情况设定为不调仓时），延续上一期，采用pre_trade_weight_g
+  - 新列：post_trade_weight_v
+    - 首期采用 target_weight_v
+    - 在信号为空仓时、连续两次状态为50-50时（且该情况设定为需调仓时），采用0.5
+    - 无信号时、连续两次状态为50-50时（且该情况设定为不调仓时），延续上一期，采用pre_trade_weight_v
+  - 新列：trade_flag
+    - 发生调仓时记1，否则记0
+  - 新列：signal_count
+    - 接收到信号时记1（含有信号、不调仓的情况），否则记0
+  - 新列：turnover_2way
+    - 双边换手率
+  - 新列：period_ret_long_gross
+    - 本期间收益率
+  - 新列：period_ret_long_net
+    - （费后）本期间收益率
+  - 新列：period_ret_ls
+    - （费前）本期间多空收益率
+
+7. strategy_target_nav_df
+- 母df：strategy_target_df、各track回测结果
+- 时间范围：相较于strategy_target_df，多了
+- 频率：
+  - 日频
+  - 有sort_index()：按日期升序排列
+  
+8. strategy_combo_nav
+- 五根轨道的组合净值
+- strategy_combo_nav = strategy_track_nav_df.mean(axis=1)
+
+9. benchmark_combo_nav
+- benchmark_combo_nav = benchmark_track_nav_df.mean(axis=1)
+
+附：变量说明
+1. track_list
+  - track_list = sorted(market_df[TRACK_COL].dropna().astype(int).unique())
+  - 常用方式：for track_id in track_list
+2. strategy_track_nav_dict
+  - 字典，用于保存每条轨道的净值序列
+  - strategy_track_nav_dict[track_id] = strategy_track_nav
+  - 在每条轨道里，cumprod（费后）本期间收益率 period_ret_long_net
+3. benchmark_track_nav_dict
+  - 字典，用于保存每条轨道的净值序列
+  - benchmark_track_nav_dict[track_id] = benchmark_track_nav
+  - 在每条轨道里，cumprod（费后）本期间收益率 period_ret_long_net
+4. factor_availablee_date
+  - 出现第一个非NaN的因子值的日期
+5. factor_usable_date
+  - 出现第一个非NaN的因子值的日期的后一天
+附：原始数据中一些特殊的日期
+1. 每个轨道的最后一天
+  - 2026-03-16 ~ 2026-03-20
+  - 在要求得到下一个调仓日 next_date的时候会被删掉
+2. 每个轨道的第一天
+  - 2010-03-01 ~ 2010-03-04
+  - 在要求五轨覆盖日期取交集的代码下会被删掉

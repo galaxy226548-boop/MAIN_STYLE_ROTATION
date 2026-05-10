@@ -1,0 +1,944 @@
+# ===== ZHAO factor matrix generation and batch mounting =====
+# Source refactor target: SY_Baseline/因子生成与挂载.py
+#
+# 设计目标：
+# 1. 因子生成阶段只保留用于挂载/回测的 normalized factor 源值。
+# 2. 按 factor_done.json 中每个因子的 signal_type 完成 state/event 挂载。
+# 3. 最终输出的 mounted_normalized_factor_df 使用 benchmark_positions 的日期。
+# 4. 基于挂载后的 factor_column 和 factor_done.json 中的 bar 生成 signal_ls_df。
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import pandas as pd
+
+# 当前脚本路径：MAIN_STYLE_ROTATION/B_factors/scripts/xxx.py
+SCRIPT_PATH = Path(__file__).resolve()
+
+# 项目根目录：MAIN_STYLE_ROTATION
+PROJECT_ROOT = SCRIPT_PATH.parents[2]
+
+# 项目配置库 Config 和 factor_utils 路径。
+# 用 insert(0) 放到最前面，避免误导入 site-packages 里的 config/fontTools.config。
+SY_BASELINE_DIR = PROJECT_ROOT / "SY_Baseline"
+for import_dir in [PROJECT_ROOT, SY_BASELINE_DIR]:
+    if str(import_dir) not in sys.path:
+        sys.path.insert(0, str(import_dir))
+
+from Config import Config
+import factor_utils as fu
+
+# 数据路径
+data_df_path = PROJECT_ROOT / "A_data" / "prepared_data" / "data_df.parquet"
+market_df_path = PROJECT_ROOT / "A_data" / "prepared_data" / "market_df.parquet"
+benchmark_positions_parquet_path = PROJECT_ROOT / "C_positions" / "reference" / "benchmark_positions.parquet"
+benchmark_positions_csv_path = PROJECT_ROOT / "C_positions" / "reference" / "benchmark_positions.csv"
+factor_done_path = PROJECT_ROOT / "B_factors" / "reference" / "factor_done.json"
+output_dir = PROJECT_ROOT / "B_factors" / "output"
+prepared_data_dir = PROJECT_ROOT / "A_data" / "prepared_data"
+data_inventory_path = PROJECT_ROOT / "A_data" / "reference" / "data_inventory_A.json"
+
+# baseline Config.py 中 DATA_DIR 是相对路径 data；脚本直接运行时统一指向清洗后数据目录。
+Config.DATA_DIR = prepared_data_dir
+
+# 检查文件是否存在
+if not data_df_path.exists():
+    raise FileNotFoundError(f"找不到 data_df 文件：{data_df_path}")
+
+if not market_df_path.exists():
+    raise FileNotFoundError(f"找不到 market_df 文件：{market_df_path}")
+
+
+PREPARED_SERIES_MAP = {
+    ("DebtData.xlsx", "中国:金融机构:新增人民币贷款:中长期:当月值"): (
+        "macro_monthly.parquet",
+        "中国:金融机构:新增人民币贷款:中长期:当月值",
+    ),
+    ("D_国债到期收益率_CN_020104_260409.xlsx", "中债国债到期收益率:1年"): (
+        "rate_daily.parquet",
+        "中债国债到期收益率:1年",
+    ),
+    ("D_国债收益率_US_530430_260324.xlsx", "美国:国债收益率:2年"): (
+        "rate_daily.parquet",
+        "美国:国债收益率:2年",
+    ),
+    ("规模以上工业 招证资配.xlsx", "中国:利润总额:规模以上工业企业:累计值"): (
+        "macro_monthly.parquet",
+        "中国:利润总额:规模以上工业企业:累计值",
+    ),
+    ("规模以上工业 招证资配.xlsx", "中国:产成品存货:规模以上工业企业:同比"): (
+        "macro_monthly.parquet",
+        "中国:产成品存货:规模以上工业企业:同比",
+    ),
+    ("公共预算支出.xlsx", "中国:一般公共预算支出:当月同比(1-2月合并)"): (
+        "macro_monthly.parquet",
+        "中国:一般公共预算支出:当月同比(1-2月合并)",
+    ),
+    ("日频汇率.xlsx", "中间价:美元兑人民币"): (
+        "exchange_rate_daily.parquet",
+        "中间价:美元兑人民币",
+    ),
+}
+
+_PREPARED_TABLE_CACHE: dict[str, pd.DataFrame] = {}
+_DATA_INVENTORY_CACHE: dict[str, object] | None = None
+
+
+def load_default_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+    data_df = pd.read_parquet(data_df_path)
+    market_df = pd.read_parquet(market_df_path)
+    data_df.index = pd.to_datetime(data_df.index)
+    market_df.index = pd.to_datetime(market_df.index)
+    return data_df.sort_index(), market_df.sort_index()
+
+
+def load_benchmark_index() -> pd.DatetimeIndex:
+    if benchmark_positions_parquet_path.exists():
+        benchmark_df = pd.read_parquet(benchmark_positions_parquet_path)
+        benchmark_index = pd.to_datetime(benchmark_df.index)
+    elif benchmark_positions_csv_path.exists():
+        benchmark_df = pd.read_csv(benchmark_positions_csv_path)
+        if "date" not in benchmark_df.columns:
+            raise KeyError(f"{benchmark_positions_csv_path} must contain a date column")
+        benchmark_index = pd.to_datetime(benchmark_df["date"])
+    else:
+        raise FileNotFoundError(
+            "找不到 benchmark positions 文件："
+            f"{benchmark_positions_parquet_path} 或 {benchmark_positions_csv_path}"
+        )
+
+    benchmark_index = pd.DatetimeIndex(benchmark_index).sort_values()
+    if benchmark_index.has_duplicates:
+        duplicated = benchmark_index[benchmark_index.duplicated()].unique()
+        raise ValueError(f"benchmark positions 日期存在重复：{duplicated[:5].tolist()}")
+    return benchmark_index
+
+
+def load_data_inventory() -> dict[str, object]:
+    global _DATA_INVENTORY_CACHE
+    if _DATA_INVENTORY_CACHE is None:
+        if not data_inventory_path.exists():
+            raise FileNotFoundError(f"找不到 data_inventory_A.json：{data_inventory_path}")
+        _DATA_INVENTORY_CACHE = json.loads(data_inventory_path.read_text(encoding="utf-8"))
+    return _DATA_INVENTORY_CACHE
+
+
+def _normalize_clean_data_name(clean_data: str) -> str:
+    clean_data = str(clean_data)
+    if clean_data in {"none", "", "nan"}:
+        return clean_data
+    if Path(clean_data).suffix:
+        return clean_data
+    return clean_data + ".parquet"
+
+
+def validate_prepared_mapping() -> None:
+    inventory = load_data_inventory()
+    clean_data_values = set()
+    for sheet_meta in inventory.get("sheets", {}).values():
+        for record in sheet_meta.get("records", []):
+            clean_data = record.get("clean_data")
+            if clean_data:
+                clean_data_values.add(_normalize_clean_data_name(clean_data))
+
+    for table_name, _column_name in PREPARED_SERIES_MAP.values():
+        table_name = _normalize_clean_data_name(table_name)
+        table_path = prepared_data_dir / table_name
+        if not table_path.exists():
+            raise FileNotFoundError(f"映射到的 prepared 文件不存在：{table_path}")
+        if table_name not in clean_data_values:
+            print(f"Warning: {table_name} 未在 data_inventory_A.json 的 clean_data 中出现，仍按 prepared 文件读取。")
+
+
+def _prepared_table_path(table_name: str) -> Path:
+    table_name = _normalize_clean_data_name(table_name)
+    path = prepared_data_dir / table_name
+    if not path.exists():
+        raise FileNotFoundError(f"找不到 prepared 数据文件：{path}")
+    if path.suffix == ".feather":
+        print(f"需要读取 feather 文件：{path}")
+        raise RuntimeError("feather 不是 B 模块默认数据源；请确认该因子是否非用 feather 不可。")
+    return path
+
+
+def load_prepared_table(table_name: str) -> pd.DataFrame:
+    table_name = _normalize_clean_data_name(table_name)
+    if table_name not in _PREPARED_TABLE_CACHE:
+        path = _prepared_table_path(table_name)
+        if path.suffix == ".parquet":
+            df = pd.read_parquet(path)
+        elif path.suffix in {".xlsx", ".xls"}:
+            df = pd.read_excel(path)
+        else:
+            raise ValueError(f"不支持的 prepared 数据格式：{path}")
+        _PREPARED_TABLE_CACHE[table_name] = df
+    return _PREPARED_TABLE_CACHE[table_name].copy()
+
+
+def read_prepared_series(table_name: str, column_name: str) -> pd.Series:
+    df = load_prepared_table(table_name)
+    if column_name not in df.columns:
+        raise KeyError(
+            f"{column_name} not found in prepared table {table_name}. "
+            f"Available columns: {list(df.columns)}"
+        )
+
+    if isinstance(df.index, pd.DatetimeIndex):
+        index = pd.to_datetime(df.index)
+    else:
+        date_col = next((col for col in ["date", "日期", "TRADE_DT", "Trddt"] if col in df.columns), None)
+        if date_col is None:
+            raise KeyError(f"prepared table {table_name} 没有 datetime index，也找不到日期列")
+        index = pd.to_datetime(df[date_col], errors="coerce")
+
+    s = pd.Series(pd.to_numeric(df[column_name], errors="coerce").to_numpy(), index=index, name=column_name)
+    s = s[s.index.notna()].sort_index()
+    return s[~s.index.duplicated(keep="last")]
+
+
+def clean_macro_table(df: pd.DataFrame, nation: str = "美国", indi: str = "PMI") -> pd.DataFrame:
+    out = df.copy()
+    out = out[out["国家/地区"] == nation]
+    out = out[out["指标名称"].astype(str).str.contains(indi, na=False)]
+
+    keep_cols = [
+        out.columns[2],
+        out.columns[3],
+        out.columns[4],
+        out.columns[5],
+        out.columns[7],
+        out.columns[8],
+        out.columns[9],
+        out.columns[-1],
+    ]
+    out = out[keep_cols].copy()
+    out.columns = ["date", "time", "nation", "indicator", "prev", "forecast", "actual", "file_ym"]
+    out = out.set_index("date").sort_index(ascending=True)
+    out = out.drop_duplicates(
+        subset=["time", "nation", "indicator", "prev", "forecast", "actual"],
+        keep="last",
+    )
+    return out
+
+
+def _find_data_file(file_name):
+    file_name = str(file_name)
+    if file_name.lower().endswith(".feather"):
+        candidate = prepared_data_dir / file_name
+        print(f"需要读取 feather 文件：{candidate}")
+        raise RuntimeError("feather 不是 B 模块默认数据源；请确认该因子是否非用 feather 不可。")
+
+    direct = prepared_data_dir / file_name
+    if direct.exists():
+        return direct
+    candidates = sorted(prepared_data_dir.rglob(file_name))
+    if not candidates and not file_name.lower().endswith((".xlsx", ".xls")):
+        candidates = sorted(prepared_data_dir.rglob(file_name + ".xlsx"))
+    if not candidates:
+        fallback_root = PROJECT_ROOT / "A_data" / "data"
+        candidates = sorted(fallback_root.rglob(file_name))
+        if not candidates and not file_name.lower().endswith((".xlsx", ".xls")):
+            candidates = sorted(fallback_root.rglob(file_name + ".xlsx"))
+    if not candidates:
+        raise FileNotFoundError(f"Cannot find data file under {prepared_data_dir}: {file_name}")
+    if len(candidates) > 1:
+        print(f"Multiple files matched {file_name}, using: {candidates[0]}")
+    return candidates[0]
+
+
+def _as_numeric(series, percent_hint=False):
+    text = series.astype(str).str.strip()
+    has_percent_sign = text.str.contains("%", regex=False, na=False).any()
+    numeric = pd.to_numeric(
+        text.str.replace("%", "", regex=False).str.replace(",", "", regex=False),
+        errors="coerce",
+    )
+    if percent_hint or has_percent_sign:
+        numeric = numeric / 100
+    return numeric
+
+
+def _read_indicator_series(file_name, value_col, sheet_name=0):
+    prepared_mapping = PREPARED_SERIES_MAP.get((str(file_name), str(value_col)))
+    if prepared_mapping is not None:
+        table_name, prepared_col = prepared_mapping
+        return read_prepared_series(table_name, prepared_col)
+
+    path = _find_data_file(file_name)
+    if path.suffix == ".feather":
+        print(f"需要读取 feather 文件：{path}")
+        raise RuntimeError("feather 不是 B 模块默认数据源；请确认该因子是否非用 feather 不可。")
+    raw = pd.read_excel(path, sheet_name=sheet_name)
+    date_col = raw.columns[0]
+    unit_mask = raw[date_col].astype(str).str.strip().eq("单位")
+    percent_hint = False
+    if value_col in raw.columns and unit_mask.any():
+        percent_hint = raw.loc[unit_mask, value_col].astype(str).str.contains("%", regex=False, na=False).any()
+    out = raw.copy()
+    out[date_col] = pd.to_datetime(out[date_col], errors="coerce")
+    out = out[out[date_col].notna()].copy()
+    out = out.set_index(date_col).sort_index(ascending=True)
+    if value_col not in out.columns:
+        raise KeyError(f"{value_col} not found in {path}. Available columns: {list(out.columns)}")
+    s = _as_numeric(out[value_col], percent_hint=percent_hint)
+    s.name = value_col
+    return s[~s.index.duplicated(keep="last")].sort_index()
+
+
+def _month_aggregate(series, how="average"):
+    s = series.dropna().copy().sort_index()
+    grouped = s.groupby(s.index.to_period("M"))
+    if how in ["average", "mean"]:
+        out = grouped.mean()
+    elif how == "last":
+        out = grouped.last()
+    elif how == "sum":
+        out = grouped.sum()
+    else:
+        raise ValueError(f"Unsupported aggregate method: {how}")
+    last_dates = grouped.apply(lambda x: x.index[-1])
+    out.index = last_dates.values
+    return out
+
+
+def _data_month_end_series(monthly_series, data_index: pd.DatetimeIndex):
+    s = monthly_series.dropna().copy().sort_index()
+    if len(s) == 0:
+        return pd.Series(dtype="float64")
+    s.index = pd.to_datetime(s.index).to_period("M")
+    s = s[~s.index.duplicated(keep="last")]
+    data_index = pd.DatetimeIndex(data_index).sort_values()
+    last_data_date_by_month = pd.Series(data_index, index=data_index.to_period("M")).groupby(level=0).max()
+    target_dates = last_data_date_by_month.reindex(s.index)
+    valid = target_dates.notna()
+    out = pd.Series(
+        s.loc[valid].to_numpy(dtype="float64"),
+        index=pd.DatetimeIndex(target_dates.loc[valid].to_numpy()),
+        dtype="float64",
+    )
+    return out.sort_index()
+
+
+def _rolling_quantile_rank_year(series, year=5):
+    s = series.dropna().sort_index()
+    dates = s.index
+    out = []
+    left = 0
+    if len(s) == 0:
+        return pd.Series(dtype="float64")
+    first_date = dates[0]
+    for right in range(len(s)):
+        end_date = dates[right]
+        start_date = end_date - pd.DateOffset(years=year)
+        if first_date > start_date:
+            out.append(np.nan)
+            continue
+        while left < right and dates[left] < start_date:
+            left += 1
+        window = s.iloc[left:right + 1]
+        out.append(window.rank(pct=True).iloc[-1])
+    return pd.Series(out, index=s.index)
+
+
+def _load_macro_all():
+    return load_prepared_table("macro.parquet")
+
+
+def _macro_monthly_fallback_series(keyword: str, value_col: str = "今值") -> pd.Series:
+    if value_col not in {"今值", "actual"}:
+        raise ValueError(f"macro_monthly fallback only supports current values, got value_col={value_col!r}")
+
+    macro_monthly = load_prepared_table("macro_monthly.parquet")
+    keyword_text = str(keyword)
+    candidates = [col for col in macro_monthly.columns if keyword_text in str(col)]
+
+    if not candidates:
+        simplified = (
+            keyword_text
+            .replace("月", "")
+            .replace("(%)", "")
+            .replace("(亿美元)", "")
+            .replace(":当月值", "")
+        )
+        candidates = [col for col in macro_monthly.columns if simplified and simplified in str(col)]
+
+    if not candidates:
+        raise ValueError(f"No China macro rows matched keyword={keyword!r}, and no macro_monthly fallback column matched")
+    if len(candidates) > 1:
+        exact = [col for col in candidates if str(col).endswith(keyword_text) or str(col) == keyword_text]
+        if len(exact) == 1:
+            candidates = exact
+        else:
+            raise ValueError(f"macro_monthly fallback for keyword={keyword!r} matched multiple columns: {candidates}")
+
+    return read_prepared_series("macro_monthly.parquet", candidates[0])
+
+
+def _load_china_macro_series(keyword, value_col="今值", required_contains=None, exclude_contains=None):
+    macro = _load_macro_all()
+    date_col = "日期" if "日期" in macro.columns else macro.columns[2]
+    nation_col = "国家/地区" if "国家/地区" in macro.columns else macro.columns[4]
+    indicator_col = "指标名称" if "指标名称" in macro.columns else macro.columns[5]
+    mask = macro[nation_col].eq("中国")
+    mask &= macro[indicator_col].astype(str).str.contains(keyword, na=False, regex=False)
+    if required_contains is not None:
+        required_list = [required_contains] if isinstance(required_contains, str) else list(required_contains)
+        for item in required_list:
+            mask &= macro[indicator_col].astype(str).str.contains(item, na=False, regex=False)
+    if exclude_contains is not None:
+        exclude_list = [exclude_contains] if isinstance(exclude_contains, str) else list(exclude_contains)
+        for item in exclude_list:
+            mask &= ~macro[indicator_col].astype(str).str.contains(item, na=False, regex=False)
+    out = macro.loc[mask].copy()
+    if out.empty:
+        return _macro_monthly_fallback_series(keyword, value_col=value_col)
+    percent_hint = (
+        out[indicator_col].astype(str).str.contains("%", regex=False, na=False).any()
+        or out[value_col].astype(str).str.contains("%", regex=False, na=False).any()
+    )
+    out[date_col] = pd.to_datetime(out[date_col], errors="coerce")
+    out = out[out[date_col].notna()].copy()
+    sort_cols = [x for x in [date_col, "来源文件", "来源sheet", "文件年月"] if x in out.columns]
+    out = out.sort_values(sort_cols, na_position="first")
+    s = pd.Series(_as_numeric(out[value_col], percent_hint=percent_hint).to_numpy(), index=out[date_col], name=keyword).sort_index()
+    dup_count = int(s.index.duplicated(keep=False).sum())
+    if dup_count > 0:
+        print(f"Macro keyword {keyword!r} matched {dup_count} duplicate-date rows; keeping the last row per date.")
+        s = s[~s.index.duplicated(keep="last")]
+    return s.sort_index()
+
+
+def _rolling_sum_ratio_minus_one(series, window=12, shift=11):
+    rolling_sum = series.dropna().sort_index().rolling(window=window, min_periods=window).sum().dropna()
+    division = rolling_sum / rolling_sum.shift(shift) - 1
+    return division.dropna()
+
+
+def _YoY(monthly_series):
+    s = monthly_series.dropna().sort_index()
+    return s / s.shift(1) - 1
+
+
+def _register_factor(
+    _raw_factor_df: pd.DataFrame,
+    normalized_factor_df: pd.DataFrame,
+    raw_col: str,
+    raw_factor_series: pd.Series,
+    normalized_factor_series: Optional[pd.Series] = None,
+) -> None:
+    if not raw_col.endswith("_raw"):
+        raise ValueError(f"{raw_col} must end with _raw")
+    factor_col = raw_col[:-4]
+
+    if normalized_factor_series is None:
+        normalized_factor_series = raw_factor_series
+
+    normalized_factor = normalized_factor_series.copy().sort_index()
+    normalized_factor.index = pd.to_datetime(normalized_factor.index)
+    normalized_factor = normalized_factor[~normalized_factor.index.duplicated(keep="last")]
+    normalized_factor_df[factor_col] = normalized_factor.reindex(normalized_factor_df.index).astype("float64")
+
+    print(
+        f"{raw_col} registered:",
+        "source_factor_non_na=", int(normalized_factor_df[factor_col].notna().sum()),
+        "first=", normalized_factor_df[factor_col].first_valid_index(),
+        "last=", normalized_factor_df[factor_col].last_valid_index(),
+    )
+
+
+def pmi_yoy_chain(
+    df_PMI: pd.DataFrame,
+    value_col: str = "actual",
+    scale: float = 0.01,
+    base_level: float = 100.0,
+    drop_dup_keep: str = "last",
+) -> pd.DataFrame:
+    out = df_PMI.copy()
+    out = out.sort_index()
+    out = out[~out.index.duplicated(keep=drop_dup_keep)].copy()
+    out["PMI"] = pd.to_numeric(out[value_col], errors="coerce")
+    out["mom_proxy"] = (out["PMI"] - 50.0) * scale
+    growth_factor = 1.0 + out["mom_proxy"]
+    out["pseudo_level"] = base_level * growth_factor.cumprod()
+    out["yoy_chain"] = out["pseudo_level"] / out["pseudo_level"].shift(12) - 1.0
+    return out
+
+
+def normalize_trade_dt(series):
+    text = series.astype("string").str.strip().str.replace(r"\.0$", "", regex=True)
+    is_yyyymmdd = text.str.fullmatch(r"\d{8}").fillna(False)
+    dt = pd.Series(pd.NaT, index=series.index, dtype="datetime64[ns]")
+    dt.loc[is_yyyymmdd] = pd.to_datetime(text.loc[is_yyyymmdd], format="%Y%m%d", errors="coerce")
+    dt.loc[~is_yyyymmdd] = pd.to_datetime(text.loc[~is_yyyymmdd], errors="coerce")
+    return dt.dt.normalize()
+
+
+def calc_qrd(x: pd.Series) -> float:
+    x = x.dropna()
+    if len(x) < 10:
+        return np.nan
+    q10 = x.quantile(0.10)
+    q25 = x.quantile(0.25)
+    q75 = x.quantile(0.75)
+    q90 = x.quantile(0.90)
+    denominator = q90 - q10
+    if denominator == 0:
+        return np.nan
+    return (q75 - q25) / denominator
+
+
+def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
+    data_df = data_df.copy()
+    data_df.index = pd.to_datetime(data_df.index)
+    data_df = data_df.sort_index()
+    data_index = pd.DatetimeIndex(data_df.index)
+
+    # 保留旧 _register_factor 调用形态中的占位参数，实际只写入 factor_source_df。
+    raw_factor_df = pd.DataFrame(index=data_index)
+    factor_source_df = pd.DataFrame(index=data_index)
+
+    # ### index_pb (ZHAO01)
+    sub_1 = _read_indicator_series("D_PE+PB+DI+PS+PC+调仓_growth_100104_260325.xlsx", "市净率LF").dropna()
+    sub_2 = _read_indicator_series("D_PE+PB+DI+PS+PC+调仓_value_100104_260325.xlsx", "市净率LF").dropna()
+    valuation_ratio = sub_1 / sub_2
+    quantile_rank = _rolling_quantile_rank_year(valuation_ratio, 5)
+    ZHAO01_raw = (0.1 - quantile_rank).clip(lower=0) - (quantile_rank - 0.9).clip(lower=0).dropna()
+    ZHAO01_raw = _month_aggregate(ZHAO01_raw, how="last")
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO01_raw", quantile_rank, ZHAO01_raw)
+
+    # ### index_pe (ZHAO02)
+    sub_1 = _read_indicator_series("D_PE+PB+DI+PS+PC+调仓_growth_100104_260325.xlsx", "市盈率TTM").dropna()
+    sub_2 = _read_indicator_series("D_PE+PB+DI+PS+PC+调仓_value_100104_260325.xlsx", "市盈率TTM").dropna()
+    valuation_ratio = sub_1 / sub_2
+    quantile_rank = _rolling_quantile_rank_year(valuation_ratio, 5)
+    ZHAO02_raw = (0.1 - quantile_rank).clip(lower=0) - (quantile_rank - 0.9).clip(lower=0).dropna()
+    ZHAO02_raw = _month_aggregate(ZHAO02_raw, how="last")
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO02_raw", quantile_rank, ZHAO02_raw)
+
+    # ### PB_QRD (ZHAO03)
+    df_component = pd.read_parquet(_find_data_file("IndexComponents.parquet"))
+    df_pb = pd.read_parquet(_find_data_file("pb.parquet"))
+    target = "399370.SZ"
+    comp_date = "TRADE_DT"
+    comp_code = "S_CON_WINDCODE"
+    pb_date = "TRADE_DT"
+    df_component[comp_date] = normalize_trade_dt(df_component[comp_date])
+    df_pb[pb_date] = normalize_trade_dt(df_pb[pb_date])
+    df_component[comp_code] = df_component[comp_code].astype(str).str.strip()
+
+    df_pb_wide = df_pb.copy()
+    if isinstance(df_pb_wide.index, pd.MultiIndex):
+        if pb_date in df_pb_wide.index.names:
+            df_pb_wide = df_pb_wide.reset_index()
+    elif df_pb_wide.index.name == pb_date:
+        df_pb_wide = df_pb_wide.reset_index()
+
+    if isinstance(df_pb_wide.columns, pd.MultiIndex):
+        def _flatten_pb_col(col):
+            parts = [str(item).strip() for item in col if pd.notna(item) and str(item).strip() not in ("", "nan")]
+            wind_codes = [item for item in parts if re.match(r"^[0-9A-Z]{6}\.(SH|SZ|BJ)$", item)]
+            return wind_codes[0] if wind_codes else (parts[0] if parts else "")
+
+        df_pb_wide.columns = [_flatten_pb_col(col) for col in df_pb_wide.columns.to_flat_index()]
+
+    pb_date_col = next(
+        (col for col in df_pb_wide.columns if str(col).strip().upper() in {pb_date, "DATE"}),
+        df_pb_wide.columns[0],
+    )
+    df_pb_wide = df_pb_wide.rename(columns={pb_date_col: comp_date})
+    df_pb_wide[comp_date] = normalize_trade_dt(df_pb_wide[comp_date])
+    df_pb_wide = (
+        df_pb_wide
+        .dropna(subset=[comp_date])
+        .drop_duplicates(subset=[comp_date], keep="last")
+        .set_index(comp_date)
+    )
+    df_pb_wide.columns = df_pb_wide.columns.astype(str).str.strip()
+    df_pb_wide = df_pb_wide.loc[:, ~df_pb_wide.columns.duplicated(keep="last")]
+
+    component_monthly = df_component.copy()
+    pb_trade_dates = df_pb.copy()
+    component_monthly["TRADE_DT"] = pd.to_datetime(component_monthly["TRADE_DT"])
+    pb_trade_dates["TRADE_DT"] = pd.to_datetime(pb_trade_dates["TRADE_DT"])
+    trade_dates = pb_trade_dates[["TRADE_DT"]].drop_duplicates().sort_values("TRADE_DT")
+    component_monthly = component_monthly.sort_values("TRADE_DT")
+    month_end_dates = (
+        component_monthly[["TRADE_DT"]]
+        .drop_duplicates()
+        .sort_values("TRADE_DT")
+        .rename(columns={"TRADE_DT": "COMPONENT_DT"})
+    )
+    date_map = pd.merge_asof(
+        trade_dates.sort_values("TRADE_DT"),
+        month_end_dates,
+        left_on="TRADE_DT",
+        right_on="COMPONENT_DT",
+        direction="backward",
+    )
+    df_component_daily = date_map.merge(
+        component_monthly,
+        left_on="COMPONENT_DT",
+        right_on="TRADE_DT",
+        how="left",
+        suffixes=("", "_component"),
+    )
+    df_component_daily = df_component_daily.drop(columns=["TRADE_DT_component"])
+    df_component_daily = df_component_daily.rename(columns={"TRADE_DT": "TRADE_DT"})
+    df_component_daily = df_component_daily.sort_values(
+        ["TRADE_DT", "S_INFO_WINDCODE", "S_CON_WINDCODE"]
+    ).reset_index(drop=True)
+
+    row_pos = df_pb_wide.index.get_indexer(df_component_daily[comp_date])
+    col_pos = df_pb_wide.columns.get_indexer(df_component_daily[comp_code])
+    pb_values = np.full(len(df_component_daily), np.nan, dtype=object)
+    valid_pb = (row_pos >= 0) & (col_pos >= 0)
+    pb_matrix = df_pb_wide.to_numpy()
+    pb_values[valid_pb] = pb_matrix[row_pos[valid_pb], col_pos[valid_pb]]
+    df_component_daily["pb_value"] = pd.to_numeric(pd.Series(pb_values, index=df_component_daily.index), errors="coerce")
+    df_merged_pb = df_component_daily.dropna().reset_index(drop=True)
+
+    target_index_list = [target]
+    df_merged_pb = df_merged_pb[df_merged_pb["S_INFO_WINDCODE"].isin(target_index_list)].copy()
+    daily_qrd = (
+        df_merged_pb
+        .groupby(["S_INFO_WINDCODE", "TRADE_DT"])["pb_value"]
+        .apply(calc_qrd)
+        .reset_index(name="PB_QRD")
+    )
+    daily_qrd = daily_qrd.sort_values(["S_INFO_WINDCODE", "TRADE_DT"])
+    daily_qrd["PB_QRD_MA20"] = (
+        daily_qrd
+        .groupby("S_INFO_WINDCODE")["PB_QRD"]
+        .transform(lambda s: s.rolling(window=20, min_periods=20).mean())
+    )
+    qrd_ts = daily_qrd.set_index("TRADE_DT").sort_index()[["PB_QRD", "PB_QRD_MA20"]].dropna()
+    qrd_ts["ZHAO03"] = qrd_ts["PB_QRD_MA20"] / qrd_ts["PB_QRD_MA20"].shift(1) - 1
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO03_raw", qrd_ts["ZHAO03"])
+
+    # ### PB_MAD (ZHAO04)
+    df_merged_pb["pb_median"] = df_merged_pb.groupby("TRADE_DT")["pb_value"].transform("median")
+    df_merged_pb["abs_dev"] = (df_merged_pb["pb_value"] - df_merged_pb["pb_median"]).abs()
+    mad_df = df_merged_pb.groupby("TRADE_DT")["abs_dev"].median().rename("PB_MAD").reset_index()
+    df_merged_pb["PB_MAD"] = df_merged_pb.groupby("TRADE_DT")["abs_dev"].transform("median")
+    mad_df["PB_MAD_MA20"] = mad_df["PB_MAD"].rolling(window=20, min_periods=20).mean()
+    mad_df = mad_df.dropna()
+    mad_df["ZHAO04"] = mad_df["PB_MAD_MA20"] / mad_df["PB_MAD_MA20"].shift(1) - 1
+    mad_df.set_index("TRADE_DT", inplace=True)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO04_raw", mad_df["ZHAO04"])
+
+    # ### 新增中长期人民币贷款 (ZHAO05)
+    sub_1 = _read_indicator_series("DebtData.xlsx", "中国:金融机构:新增人民币贷款:中长期:当月值")
+    ZHAO05_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO05_raw", ZHAO05_raw)
+
+    # ### PMI (ZHAO06)
+    df_PMI = _load_macro_all()
+    df_PMI = clean_macro_table(df_PMI, nation="中国", indi="官方制造业PMI")
+    df_PMI = df_PMI[~df_PMI.index.duplicated(keep="last")]
+    df_pmi_chain = pmi_yoy_chain(df_PMI, value_col="actual", scale=0.01)
+    ZHAO06_raw = df_pmi_chain["yoy_chain"]
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO06_raw", ZHAO06_raw)
+
+    # ### 1年期国债到期收益率 (ZHAO07)
+    sub_1 = _read_indicator_series("D_国债到期收益率_CN_020104_260409.xlsx", "中债国债到期收益率:1年")
+    monthly_avg = _month_aggregate(sub_1, how="average")
+    ZHAO07_raw = _YoY(monthly_avg) * (-1)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO07_raw", ZHAO07_raw)
+
+    # ### 2年期美国国债到期收益率 (ZHAO08)
+    sub_1 = _read_indicator_series("D_国债收益率_US_530430_260324.xlsx", "美国:国债收益率:2年")
+    monthly_avg = _month_aggregate(sub_1, how="average")
+    ZHAO08_raw = _YoY(monthly_avg) * (-1)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO08_raw", ZHAO08_raw)
+
+    # ### 新增规上工业企业利润总额 (ZHAO09)s
+    sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:利润总额:规模以上工业企业:累计值")
+    ZHAO09_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO09_raw", ZHAO09_raw)
+
+    # ### 工业企业产成品存货 (ZHAO10)
+    sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:产成品存货:规模以上工业企业:同比")
+    ZHAO10_raw = _data_month_end_series(0 - sub_1, data_index)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO10_raw", ZHAO10_raw)
+
+    # ### 新增社零 (ZHAO11)
+    sub_1 = _load_china_macro_series("社会消费品零售总额")
+    ZHAO11_raw = _rolling_sum_ratio_minus_one(sub_1, window=12, shift=11)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO11_raw", ZHAO11_raw)
+
+    # ### 新增出口额（美元） (ZHAO12)
+    sub_1 = _load_china_macro_series("月出口金额:当月值(亿美元)")
+    ZHAO12_raw = _rolling_sum_ratio_minus_one(sub_1, window=12)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO12_raw", ZHAO12_raw)
+
+    # ### 一般公共预算支出 (ZHAO13)
+    sub_1 = _read_indicator_series("公共预算支出.xlsx", "中国:一般公共预算支出:当月同比(1-2月合并)")
+    ZHAO13_raw = _data_month_end_series(sub_1, data_index)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO13_raw", ZHAO13_raw)
+
+    # ### 美元兑人民币中间价 (ZHAO14)
+    sub_1 = _read_indicator_series("日频汇率.xlsx", "中间价:美元兑人民币")
+    monthly_avg = _month_aggregate(sub_1, how="average")
+    ZHAO14_raw = _YoY(monthly_avg) * (-1)
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO14_raw", ZHAO14_raw)
+
+    # ### M0同比 (ZHAO15)
+    sub_1 = _load_china_macro_series("月M0:同比(%)")
+    ZHAO15_raw = sub_1
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO15_raw", ZHAO15_raw)
+
+    # ### M1同比 (ZHAO16)
+    sub_1 = _load_china_macro_series("月M1:同比(%)")
+    ZHAO16_raw = sub_1
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO16_raw", ZHAO16_raw)
+
+    # ### M2同比 (ZHAO17)
+    sub_1 = _load_china_macro_series("月M2:同比(%)")
+    ZHAO17_raw = sub_1
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO17_raw", ZHAO17_raw)
+
+    # ### M1同比-M2同比 (ZHAO18)
+    sub_1 = _load_china_macro_series("月M1:同比(%)")
+    sub_2 = _load_china_macro_series("月M2:同比(%)")
+    ZHAO18_raw = sub_1 - sub_2
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO18_raw", ZHAO18_raw)
+
+    # ### PPI (ZHAO20)
+    sub_1 = _load_china_macro_series("PPI:同比")
+    ZHAO20_raw = sub_1
+    _register_factor(raw_factor_df, factor_source_df, "ZHAO20_raw", ZHAO20_raw)
+
+    return factor_source_df
+
+
+def _normalize_signal_type(signal_type: object) -> str:
+    value = str(signal_type).strip().lower()
+    if value == "stsate":
+        value = "state"
+    if value not in {"state", "event"}:
+        raise ValueError(f"Unsupported signal_type: {signal_type!r}")
+    return value
+
+
+def load_factor_metadata(factor_cols: list[str]) -> tuple[dict[str, dict[str, object]], list[dict[str, object]]]:
+    if not factor_done_path.exists():
+        raise FileNotFoundError(f"找不到 factor_done.json：{factor_done_path}")
+
+    payload = json.loads(factor_done_path.read_text(encoding="utf-8"))
+    records = []
+    for sheet_name, sheet_meta in payload.get("sheets", {}).items():
+        for record in sheet_meta.get("records", []):
+            if record.get("code") is not None:
+                item = dict(record)
+                item["_sheet"] = sheet_name
+                records.append(item)
+
+    by_code: dict[str, list[dict[str, object]]] = {}
+    for record in records:
+        by_code.setdefault(str(record["code"]), []).append(record)
+
+    metadata: dict[str, dict[str, object]] = {}
+    missing_bar_defaults: list[dict[str, object]] = []
+
+    for factor_col in factor_cols:
+        matches = by_code.get(factor_col, [])
+        if not matches:
+            raise KeyError(f"factor_done.json 中找不到因子 code={factor_col}")
+        if len(matches) > 1:
+            done_matches = [x for x in matches if x.get("progress") in {"done", "completed"}]
+            matches = done_matches or matches
+        if len(matches) > 1:
+            raise ValueError(f"factor_done.json 中 code={factor_col} 有多条候选，无法唯一匹配")
+
+        record = matches[0]
+        signal_type = _normalize_signal_type(record.get("signal_type"))
+        bar = record.get("bar")
+        used_default_bar = bar is None
+        if used_default_bar:
+            bar = 0
+            missing_bar_defaults.append(
+                {
+                    "code": factor_col,
+                    "factor": record.get("factor"),
+                    "signal_type": signal_type,
+                    "progress": record.get("progress"),
+                    "default_bar": bar,
+                }
+            )
+        metadata[factor_col] = {
+            "signal_type": signal_type,
+            "bar": float(bar),
+            "factor": record.get("factor"),
+            "progress": record.get("progress"),
+        }
+
+    return metadata, missing_bar_defaults
+
+
+def mount_factor_source_frame(
+    factor_source_df: pd.DataFrame,
+    market_df: pd.DataFrame,
+    benchmark_index: pd.DatetimeIndex,
+    metadata: dict[str, dict[str, object]],
+    track_col: str = "track_id",
+) -> pd.DataFrame:
+    factor_source_df = factor_source_df.copy().sort_index()
+    market_df = market_df.copy().sort_index()
+    factor_source_df.index = pd.to_datetime(factor_source_df.index)
+    market_df.index = pd.to_datetime(market_df.index)
+    benchmark_index = pd.DatetimeIndex(benchmark_index).sort_values()
+
+    if track_col not in market_df.columns:
+        raise KeyError(f"event factors require {track_col} in market_df")
+
+    mounted_df = pd.DataFrame(index=market_df.index, columns=factor_source_df.columns, dtype="float64")
+
+    state_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "state"]
+    if state_cols:
+        mounted_df.loc[:, state_cols] = factor_source_df[state_cols].shift(1).reindex(market_df.index)
+
+    event_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "event"]
+    if event_cols:
+        track_values = sorted(pd.Series(market_df[track_col]).dropna().unique())
+        track_dates = {
+            track_id: pd.DatetimeIndex(market_df.index[market_df[track_col] == track_id]).sort_values()
+            for track_id in track_values
+        }
+        for factor_col in event_cols:
+            raw_events = factor_source_df.loc[factor_source_df[factor_col].notna(), factor_col].sort_index()
+            for event_date, raw_value in raw_events.items():
+                event_date = pd.Timestamp(event_date)
+                for candidate_dates in track_dates.values():
+                    future_dates = candidate_dates[candidate_dates > event_date]
+                    if len(future_dates) > 0:
+                        mounted_df.loc[future_dates[0], factor_col] = raw_value
+
+    return mounted_df.reindex(benchmark_index).astype("float64")
+
+
+def build_signal_ls_df(
+    mounted_factor_df: pd.DataFrame,
+    metadata: dict[str, dict[str, object]],
+) -> pd.DataFrame:
+    signal_ls_df = pd.DataFrame(index=mounted_factor_df.index, columns=mounted_factor_df.columns, dtype="float64")
+
+    for factor_col in mounted_factor_df.columns:
+        factor = mounted_factor_df[factor_col]
+        bar = float(metadata[factor_col]["bar"])
+        signal_type = str(metadata[factor_col]["signal_type"])
+
+        if signal_type == "state":
+            signal = pd.Series(0.0, index=factor.index)
+            signal.loc[factor > bar] = 1.0
+            signal.loc[factor < -bar] = -1.0
+        elif signal_type == "event":
+            signal = pd.Series(np.nan, index=factor.index, dtype="float64")
+            has_event = factor.notna()
+            signal.loc[has_event & (factor > bar)] = 1.0
+            signal.loc[has_event & (factor < -bar)] = -1.0
+            signal.loc[has_event & factor.between(-bar, bar)] = 0.0
+        else:
+            raise ValueError(f"Unsupported signal_type for {factor_col}: {signal_type!r}")
+
+        signal_ls_df[factor_col] = signal
+
+    return signal_ls_df
+
+
+def save_factor_outputs(
+    mounted_normalized_factor_df: pd.DataFrame,
+    signal_ls_df: pd.DataFrame,
+    missing_bar_defaults: list[dict[str, object]],
+    output_dir: Path | str = output_dir,
+) -> dict[str, Path]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    mounted_factor_path = output_dir / "zhao_mounted_normalized_factors.parquet"
+    signal_ls_path = output_dir / "zhao_signal_ls.parquet"
+    mounted_factor_xlsx_path = output_dir / "zhao_mounted_normalized_factors.xlsx"
+    signal_ls_xlsx_path = output_dir / "zhao_signal_ls.xlsx"
+    missing_bar_path = output_dir / "zhao_missing_bar_defaults.md"
+
+    mounted_normalized_factor_df.to_parquet(mounted_factor_path)
+    signal_ls_df.to_parquet(signal_ls_path)
+    _write_factor_frame_xlsx(mounted_normalized_factor_df, mounted_factor_xlsx_path)
+    _write_factor_frame_xlsx(signal_ls_df, signal_ls_xlsx_path)
+
+    lines = [
+        "# Missing bar defaults",
+        "",
+        "以下因子在 factor_done.json 中 bar 为空，本脚本已按 bar=0 生成 signal_ls。",
+        "",
+    ]
+    if missing_bar_defaults:
+        lines.append("| code | signal_type | progress | factor | default_bar |")
+        lines.append("| --- | --- | --- | --- | ---: |")
+        for item in missing_bar_defaults:
+            lines.append(
+                "| {code} | {signal_type} | {progress} | {factor} | {default_bar} |".format(
+                    code=item["code"],
+                    signal_type=item["signal_type"],
+                    progress=item.get("progress") or "",
+                    factor=str(item.get("factor") or "").replace("|", "\\|"),
+                    default_bar=item["default_bar"],
+                )
+            )
+    else:
+        lines.append("无。")
+    missing_bar_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    return {
+        "mounted_factor_parquet": mounted_factor_path,
+        "signal_ls_parquet": signal_ls_path,
+        "mounted_factor_xlsx": mounted_factor_xlsx_path,
+        "signal_ls_xlsx": signal_ls_xlsx_path,
+        "missing_bar_defaults": missing_bar_path,
+    }
+
+
+def _write_factor_frame_xlsx(df: pd.DataFrame, path: Path) -> None:
+    out = df.copy()
+    out.index = pd.to_datetime(out.index).normalize()
+    out.index.name = out.index.name or "date"
+    out.to_excel(path)
+
+    from openpyxl import load_workbook
+
+    wb = load_workbook(path)
+    ws = wb.active
+    for cell in ws["A"][1:]:
+        cell.number_format = "yyyy-mm-dd"
+    wb.save(path)
+
+
+if __name__ == "__main__":
+    validate_prepared_mapping()
+    data_df, market_df = load_default_data()
+    benchmark_index = load_benchmark_index()
+    factor_source_df = generate_zhao_factor_source_frame(data_df)
+    factor_metadata, missing_bar_defaults = load_factor_metadata(list(factor_source_df.columns))
+    mounted_normalized_factor_df = mount_factor_source_frame(
+        factor_source_df=factor_source_df,
+        market_df=market_df,
+        benchmark_index=benchmark_index,
+        metadata=factor_metadata,
+    )
+    signal_ls_df = build_signal_ls_df(mounted_normalized_factor_df, factor_metadata)
+    output_paths = save_factor_outputs(
+        mounted_normalized_factor_df=mounted_normalized_factor_df,
+        signal_ls_df=signal_ls_df,
+        missing_bar_defaults=missing_bar_defaults,
+    )
+    for label, path in output_paths.items():
+        print(f"{label} saved to:", path)
+    print("mounted_normalized_factor_df shape:", mounted_normalized_factor_df.shape)
+    print("signal_ls_df shape:", signal_ls_df.shape)
+    print("factor columns:", list(mounted_normalized_factor_df.columns))
+    print("当前 FEATURE_LIST =", Config.FEATURE_LIST)
