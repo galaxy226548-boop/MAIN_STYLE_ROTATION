@@ -38,3 +38,15 @@ build/
 A_data/
 E_backtesting/Result/
 D_analysis/IC_output/
+
+# Local/generated data folders
+**/input/**
+**/output/**
+**/output_COMB/**
+**/input_COMB/**
+
+# Local/generated data folders
+**/input/**
+**/output/**
+**/output_COMB/**
+**/input_COMB/**
