@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Optional
+from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
@@ -331,6 +332,63 @@ def _rolling_quantile_rank_year(series, year=5):
     return pd.Series(out, index=s.index)
 
 
+def data_diff(series: pd.Series) -> pd.Series:
+    s = series.copy().sort_index()
+    return s - s.shift(1)
+
+
+def data_yoy(series: pd.Series) -> pd.Series:
+    s = series.copy().sort_index()
+    return s / s.shift(1) - 1
+
+
+def calc_rolling_zscore(series: pd.Series, window: int, min_periods: Optional[int] = None) -> pd.Series:
+    if min_periods is None:
+        min_periods = window // 2
+    s = series.astype("float64").sort_index()
+    rolling_mean = s.rolling(window=window, min_periods=min_periods).mean()
+    rolling_std = s.rolling(window=window, min_periods=min_periods).std()
+    return (s - rolling_mean) / rolling_std
+
+
+def calc_llt(series: pd.Series, d: int = 30) -> pd.Series:
+    s = series.astype("float64").copy().sort_index()
+    llt_series = pd.Series(index=s.index, dtype="float64")
+    alpha = 2 / (d + 1)
+    started = False
+
+    for i in range(2, len(s)):
+        x_t = s.iloc[i]
+        x_t1 = s.iloc[i - 1]
+        x_t2 = s.iloc[i - 2]
+        if pd.isna(x_t) or pd.isna(x_t1) or pd.isna(x_t2):
+            llt_series.iloc[i] = np.nan
+            continue
+
+        if not started:
+            llt_series.iloc[i - 1] = x_t1
+            llt_series.iloc[i] = x_t
+            started = True
+            continue
+
+        llt_t1 = llt_series.iloc[i - 1]
+        llt_t2 = llt_series.iloc[i - 2]
+        if pd.isna(llt_t1) or pd.isna(llt_t2):
+            llt_series.iloc[i - 1] = x_t1
+            llt_series.iloc[i] = x_t
+            continue
+
+        llt_series.iloc[i] = (
+            (alpha - alpha ** 2 / 4) * x_t
+            + (alpha ** 2 / 2) * x_t1
+            - (alpha - 3 * alpha ** 2 / 4) * x_t2
+            + 2 * (1 - alpha) * llt_t1
+            - (1 - alpha) ** 2 * llt_t2
+        )
+
+    return llt_series
+
+
 def _load_macro_all():
     return load_prepared_table("macro.parquet")
 
@@ -542,6 +600,124 @@ def load_factor_metadata(factor_cols: list[str]) -> tuple[dict[str, dict[str, ob
     return metadata, missing_bar_defaults
 
 
+def _metadata_from_records(
+    records: list[dict[str, object]],
+    factor_cols: list[str],
+    key_name: str,
+    source_label: str,
+) -> tuple[dict[str, dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
+    by_key: dict[str, list[dict[str, object]]] = {}
+    for record in records:
+        key_value = record.get(key_name)
+        if key_value is not None:
+            by_key.setdefault(str(key_value), []).append(record)
+
+    metadata: dict[str, dict[str, object]] = {}
+    missing_bar_defaults: list[dict[str, object]] = []
+    selected_records: list[dict[str, object]] = []
+
+    for factor_col in factor_cols:
+        matches = by_key.get(factor_col, [])
+        if not matches:
+            raise KeyError(f"{source_label} 中找不到 {key_name}={factor_col}")
+        if len(matches) > 1:
+            done_matches = [x for x in matches if x.get("progress") in {"done", "completed"}]
+            matches = done_matches or matches
+        if len(matches) > 1:
+            raise ValueError(f"{source_label} 中 {key_name}={factor_col} 有多条候选，无法唯一匹配")
+
+        record = matches[0]
+        signal_type = _normalize_signal_type(record.get("signal_type"))
+        bar = record.get("bar")
+        used_default_bar = bar is None
+        if used_default_bar:
+            bar = 0
+            missing_bar_defaults.append(
+                {
+                    key_name: factor_col,
+                    "factor": record.get("factor"),
+                    "signal_type": signal_type,
+                    "progress": record.get("progress"),
+                    "default_bar": bar,
+                }
+            )
+        metadata[factor_col] = {
+            "signal_type": signal_type,
+            "bar": float(bar),
+            "factor": record.get("factor"),
+            "progress": record.get("progress"),
+        }
+        selected_records.append(dict(record))
+
+    return metadata, missing_bar_defaults, selected_records
+
+
+def load_factor_done_factor_id_metadata(
+    factor_cols: list[str],
+) -> tuple[dict[str, dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
+    if not factor_done_path.exists():
+        raise FileNotFoundError(f"找不到 factor_done.json：{factor_done_path}")
+
+    payload = json.loads(factor_done_path.read_text(encoding="utf-8"))
+    records = []
+    source_file = str(factor_done_path.relative_to(PROJECT_ROOT))
+    for sheet_name, sheet_meta in payload.get("sheets", {}).items():
+        for record in sheet_meta.get("records", []):
+            if record.get("factor_id") is not None:
+                item = dict(record)
+                item["_source_file"] = source_file
+                item["_source_sheet"] = sheet_name
+                records.append(item)
+
+    return _metadata_from_records(records, factor_cols, "factor_id", "factor_done.json")
+
+
+def save_generated_factor_records(
+    records: list[dict[str, object]],
+    output_prefix: str,
+    generated_path: Path | str | None = None,
+) -> Path:
+    path = Path(generated_path) if generated_path is not None else output_dir / "factor_generated.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if path.exists():
+        existing_payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(existing_payload, list):
+            existing_records = existing_payload
+        else:
+            existing_records = existing_payload.get("records", [])
+    else:
+        existing_records = []
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    def record_key(record: dict[str, object]) -> tuple[str, str, str, str]:
+        source_file = str(record.get("_source_file") or "")
+        source_sheet = str(record.get("_source_sheet") or record.get("_sheet") or "")
+        factor_id = record.get("factor_id")
+        if factor_id is not None:
+            return source_file, source_sheet, "factor_id", str(factor_id)
+        return source_file, source_sheet, "code", str(record.get("code") or "")
+
+    merged: dict[tuple[str, str, str, str], dict[str, object]] = {}
+    for record in existing_records:
+        if isinstance(record, dict):
+            merged[record_key(record)] = dict(record)
+
+    for record in records:
+        item = dict(record)
+        item["_generated_output_prefix"] = output_prefix
+        item["_generated_at"] = generated_at
+        merged[record_key(item)] = item
+
+    payload = {
+        "generated_at": generated_at,
+        "records": list(merged.values()),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def load_record_all_factor_metadata(
     paper_id: str,
     factor_cols: list[str],
@@ -729,7 +905,7 @@ def save_factor_outputs(
         for item in missing_bar_defaults:
             lines.append(
                 "| {code} | {signal_type} | {progress} | {factor} | {default_bar} |".format(
-                    code=item["code"],
+                    code=item.get("code") or item.get("factor_id") or "",
                     signal_type=item["signal_type"],
                     progress=item.get("progress") or "",
                     factor=str(item.get("factor") or "").replace("|", "\\|"),

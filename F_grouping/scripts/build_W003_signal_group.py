@@ -1,4 +1,4 @@
-"""Build W003 grouped factor matrix and signal matrix."""
+"""Build W003_signal grouped factor and signal matrices from signal_ls input."""
 
 from __future__ import annotations
 
@@ -6,38 +6,22 @@ import json
 from collections import OrderedDict
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 
 SCRIPT_PATH = Path(__file__).resolve()
 PROJECT_ROOT = SCRIPT_PATH.parents[2]
 
-FACTOR_GROUP = "W003"
-SOURCE_FILE_NAME = "如何从赔率和胜率看成长价值轮动——市场风格轮动系列_mounted_normalized_factors.parquet"
+FACTOR_GROUP = "W003_signal"
+SOURCE_FILE_NAME = "如何从赔率和胜率看成长价值轮动——市场风格轮动系列_signal_ls.parquet"
 INPUT_PATH = PROJECT_ROOT / "F_grouping" / "input_COMB" / SOURCE_FILE_NAME
 OUTPUT_DIR = PROJECT_ROOT / "F_grouping" / "output_COMB"
 
 FACTOR_OUTPUT_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_mounted_normalized_factors.parquet"
-SIGNAL_OUTPUT_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_factor_signal_ls.parquet"
+SIGNAL_OUTPUT_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_signal_ls.parquet"
 FACTOR_XLSX_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_mounted_normalized_factors.xlsx"
-SIGNAL_XLSX_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_factor_signal_ls.xlsx"
+SIGNAL_XLSX_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_signal_ls.xlsx"
 RECORD_JSON_PATH = OUTPUT_DIR / f"{FACTOR_GROUP}_factor_grouping_record.json"
-
-
-def zscore_series(series: pd.Series, label: str, warnings: list[str]) -> pd.Series:
-    numeric = pd.to_numeric(series, errors="coerce")
-    non_null_count = int(numeric.notna().sum())
-    if non_null_count < 2:
-        warnings.append(f"{label}: non-null sample count is {non_null_count}, cannot z-score with ddof=1.")
-        return pd.Series(np.nan, index=series.index, name=series.name, dtype="float64")
-
-    std = numeric.std(skipna=True, ddof=1)
-    if pd.isna(std) or np.isclose(std, 0.0):
-        warnings.append(f"{label}: standard deviation is {std}, z-score set to NaN.")
-        return pd.Series(np.nan, index=series.index, name=series.name, dtype="float64")
-
-    return ((numeric - numeric.mean(skipna=True)) / std).astype("float64")
 
 
 def group_columns_by_first_letter(columns: pd.Index) -> OrderedDict[str, list[str]]:
@@ -53,30 +37,25 @@ def group_columns_by_first_letter(columns: pd.Index) -> OrderedDict[str, list[st
 def build_factor_matrix(source_df: pd.DataFrame) -> tuple[pd.DataFrame, OrderedDict[str, list[str]], list[str]]:
     warnings: list[str] = []
     source_numeric = source_df.apply(pd.to_numeric, errors="coerce")
-    normalized_source = pd.DataFrame(index=source_numeric.index)
-
-    for column in source_numeric.columns:
-        normalized_source[column] = zscore_series(source_numeric[column], str(column), warnings)
-
     groups = group_columns_by_first_letter(source_numeric.columns)
-    first_level_raw = pd.DataFrame(index=source_numeric.index)
-    first_level_factor = pd.DataFrame(index=source_numeric.index)
 
+    if not groups:
+        warnings.append("No non-empty source column names were found; output matrices will be empty.")
+
+    factor_df = pd.DataFrame(index=source_numeric.index)
     for letter, columns in groups.items():
-        factor_col = f"{FACTOR_GROUP}_{letter}"
-        first_level_raw[factor_col] = normalized_source[columns].mean(axis=1, skipna=True)
-        first_level_factor[factor_col] = zscore_series(first_level_raw[factor_col], factor_col, warnings)
+        factor_col = f"W003_{letter}_signal"
+        factor_df[factor_col] = source_numeric[columns].mean(axis=1, skipna=True)
+        if source_numeric[columns].notna().sum(axis=1).eq(0).any():
+            empty_count = int(source_numeric[columns].notna().sum(axis=1).eq(0).sum())
+            warnings.append(f"{factor_col}: {empty_count} rows have all source signals as NaN.")
 
-    final_factor = first_level_factor.mean(axis=1, skipna=True).astype("float64")
-    final_factor.name = FACTOR_GROUP
-
-    factor_df = first_level_factor.copy()
-    factor_df[FACTOR_GROUP] = final_factor
-    return factor_df, groups, warnings
+    factor_df[FACTOR_GROUP] = factor_df.mean(axis=1, skipna=True)
+    return factor_df.astype("float64"), groups, warnings
 
 
 def build_signal_ls_matrix(factor_df: pd.DataFrame) -> pd.DataFrame:
-    return (factor_df / 3.0).clip(lower=-1.0, upper=1.0).astype("float64")
+    return factor_df.copy()
 
 
 def write_factor_frame_xlsx(df: pd.DataFrame, path: Path) -> None:
@@ -100,25 +79,27 @@ def build_record(
     groups: OrderedDict[str, list[str]],
     warnings: list[str],
 ) -> dict[str, object]:
-    factor_logic = (
-        "For each source factor, compute full-sample z-score using "
-        "(x - mean(skipna=True)) / std(skipna=True, ddof=1). Then group source factors by "
-        "their shared first letter, take the row-wise mean of the normalized source factors, "
-        "and z-score that first-level series again with ddof=1."
+    first_level_logic = (
+        "Group source signal_ls columns by their shared first letter. For each date, compute the "
+        "equal-weight row-wise mean of non-null source signals in the group; if all source signals "
+        "in the group are NaN, the first-level factor is NaN. No z-score, division by 3, thresholding, "
+        "or clipping is applied."
     )
-    signal_logic = "signal_ls = factor_value / 3, clipped to [-1, 1]; NaN remains NaN."
+    signal_logic = "signal_ls equals the factor value exactly; no additional transformation is applied."
     final_logic = (
-        "W003 is the row-wise mean of all first-level W003_{letter} factor values. "
-        "It is not z-scored again after averaging."
+        "W003_signal is the equal-weight row-wise mean of all first-level W003_{letter}_signal "
+        "factor values, skipping NaN first-level values. No z-score, division by 3, thresholding, "
+        "or clipping is applied."
     )
 
     first_level_factors = {}
     for letter, columns in groups.items():
-        factor_col = f"{FACTOR_GROUP}_{letter}"
+        factor_col = f"W003_{letter}_signal"
         first_level_factors[factor_col] = {
             "shared_prefix": letter,
             "source_columns": columns,
-            "factor_value_logic": factor_logic,
+            "weights": {column: 1.0 / len(columns) for column in columns},
+            "factor_value_logic": first_level_logic,
             "signal_ls_logic": signal_logic,
             "non_null_count": int(factor_df[factor_col].notna().sum()),
         }
@@ -137,10 +118,11 @@ def build_record(
         "first_level_factors": first_level_factors,
         "final_factor": {
             "name": FACTOR_GROUP,
-            "source_first_level_factors": [f"{FACTOR_GROUP}_{letter}" for letter in groups],
+            "source_first_level_factors": [f"W003_{letter}_signal" for letter in groups],
+            "weights": {f"W003_{letter}_signal": 1.0 / len(groups) for letter in groups} if groups else {},
             "factor_value_logic": final_logic,
             "signal_ls_logic": signal_logic,
-            "non_null_count": int(factor_df[FACTOR_GROUP].notna().sum()),
+            "non_null_count": int(factor_df[FACTOR_GROUP].notna().sum()) if FACTOR_GROUP in factor_df else 0,
         },
         "outputs": {
             "mounted_normalized_factors_parquet": str(FACTOR_OUTPUT_PATH),
@@ -155,7 +137,7 @@ def build_record(
 
 def main() -> None:
     if not INPUT_PATH.exists():
-        raise FileNotFoundError(f"Input factor matrix not found: {INPUT_PATH}")
+        raise FileNotFoundError(f"Input signal matrix not found: {INPUT_PATH}")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

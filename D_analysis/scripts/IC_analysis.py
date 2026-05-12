@@ -57,6 +57,7 @@ EVENT_ROLLING_MIN_N = 6
 MIN_VALID_SAMPLE = getattr(Config, "MIN_VALID_SAMPLE", 10)
 DEFAULT_SIGNAL_TYPE = "state"
 SUPPORTED_SIGNAL_TYPES = {"event", "state"}
+EVENT_NAN_RATIO_THRESHOLD = 0.30
 
 
 def calc_future_horizon_return(
@@ -155,31 +156,43 @@ def calc_rolling_ic(
     return pd.Series(values, index=df.index, name="ic")
 
 
-def load_factor_signal_types(factor_columns: list[str]) -> dict[str, str]:
+def infer_signal_type_from_nan_ratio(factor_series: pd.Series) -> tuple[str, float]:
+    nan_ratio = float(factor_series.isna().mean()) if len(factor_series) else 0.0
+    signal_type = "event" if nan_ratio >= EVENT_NAN_RATIO_THRESHOLD else "state"
+    return signal_type, nan_ratio
+
+
+def load_factor_signal_types(factor_df: pd.DataFrame) -> dict[str, str]:
+    factor_columns = factor_df.columns.tolist()
+
     if not FACTOR_METADATA_PATH.exists():
-        print(f"Warning: missing factor metadata json: {FACTOR_METADATA_PATH}; defaulting all factors to state")
-        return {factor_name: DEFAULT_SIGNAL_TYPE for factor_name in factor_columns}
+        print(f"Warning: missing factor metadata json: {FACTOR_METADATA_PATH}; inferring signal_type from NaN ratios")
+        factor_signal_types = {}
+        for factor_name in factor_columns:
+            signal_type, nan_ratio = infer_signal_type_from_nan_ratio(factor_df[factor_name])
+            print(f"Warning: signal_type missing for {factor_name}; inferred {signal_type} from nan_ratio={nan_ratio:.2%}")
+            factor_signal_types[factor_name] = signal_type
+        return factor_signal_types
 
     with FACTOR_METADATA_PATH.open(encoding="utf-8") as f:
         metadata = json.load(f)
 
-    signal_types_by_code: dict[str, str] = {}
+    signal_types_by_factor_id: dict[str, str] = {}
     for sheet_payload in metadata.get("sheets", {}).values():
         for record in sheet_payload.get("records", []):
-            code = record.get("code")
-            if not code:
-                continue
             signal_type = str(record.get("signal_type") or "").strip().lower()
             if signal_type not in SUPPORTED_SIGNAL_TYPES:
                 continue
-            signal_types_by_code.setdefault(str(code), signal_type)
+            for factor_id in [record.get("factor_id"), record.get("code")]:
+                if factor_id:
+                    signal_types_by_factor_id.setdefault(str(factor_id), signal_type)
 
     factor_signal_types: dict[str, str] = {}
     for factor_name in factor_columns:
-        signal_type = signal_types_by_code.get(factor_name)
+        signal_type = signal_types_by_factor_id.get(factor_name)
         if signal_type is None:
-            print(f"Warning: signal_type missing for {factor_name}; defaulting to {DEFAULT_SIGNAL_TYPE}")
-            signal_type = DEFAULT_SIGNAL_TYPE
+            signal_type, nan_ratio = infer_signal_type_from_nan_ratio(factor_df[factor_name])
+            print(f"Warning: signal_type missing for {factor_name}; inferred {signal_type} from nan_ratio={nan_ratio:.2%}")
         factor_signal_types[factor_name] = signal_type
 
     return factor_signal_types
@@ -203,7 +216,7 @@ def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str]]:
     if missing_cols:
         raise KeyError(f"market_df is missing required columns: {missing_cols}")
 
-    factor_signal_types = load_factor_signal_types(factor_df.columns.tolist())
+    factor_signal_types = load_factor_signal_types(factor_df)
 
     return factor_df, market_df, factor_signal_types
 
@@ -297,6 +310,21 @@ def summarize_rolling_ic_by_year(work_df: pd.DataFrame, rolling_df: pd.DataFrame
     return pd.DataFrame(rows)
 
 
+def calc_pos_ic_probability(
+    sub_df: pd.DataFrame,
+    target_col: str,
+    window: int,
+    min_n: int,
+) -> float:
+    rolling_ic = calc_rolling_ic(
+        sub_df[FACTOR_VALUE_COL],
+        sub_df[target_col],
+        window=window,
+        min_n=min_n,
+    ).dropna()
+    return (rolling_ic > 0).mean() if len(rolling_ic) else np.nan
+
+
 def target_specs(factor_name: str) -> list[tuple[str, str, int]]:
     specs = [(f"f_{factor_name}", BASE_TARGET_COL, 1)]
     specs += [
@@ -315,6 +343,8 @@ def build_ic_summary(
     work_df: pd.DataFrame,
     track_list: list[int],
     base_rolling_df: pd.DataFrame,
+    rolling_window: int,
+    rolling_min_n: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     rows = []
     internal_rows = []
@@ -330,7 +360,6 @@ def build_ic_summary(
     for row_name, target_col, nw_lag in target_specs(factor_name):
         row = {}
         internal_row = {}
-        is_base_target = target_col == BASE_TARGET_COL
 
         for track_id in track_list:
             sub_df = work_df[work_df[TRACK_COL].astype(int) == track_id]
@@ -346,9 +375,16 @@ def build_ic_summary(
             row[f"coverage_track{track_id}"] = stats["coverage"]
             row[f"nw_t_track{track_id}"] = stats["nw_t"]
             row[f"nw_p_track{track_id}"] = stats["nw_p"]
-            row[f"pos_ic_prob_track{track_id}"] = (
-                base_pos_prob_by_track[track_id] if is_base_target else np.nan
-            )
+            if target_col == BASE_TARGET_COL:
+                pos_ic_prob = base_pos_prob_by_track[track_id]
+            else:
+                pos_ic_prob = calc_pos_ic_probability(
+                    sub_df,
+                    target_col=target_col,
+                    window=rolling_window,
+                    min_n=rolling_min_n,
+                )
+            row[f"pos_ic_prob_track{track_id}"] = pos_ic_prob
 
             internal_row[f"n_track{track_id}"] = stats["N_valid"]
             internal_row[f"n_total_track{track_id}"] = stats["N_total"]
@@ -491,7 +527,14 @@ def analyze_factor(
         min_n=rolling_min_n,
     )
     rolling_summary_df = summarize_rolling_ic_by_year(ic_sample_df, rolling_df, track_list)
-    ic_df, internal_df = build_ic_summary(factor_name, ic_sample_df, track_list, rolling_df)
+    ic_df, internal_df = build_ic_summary(
+        factor_name,
+        ic_sample_df,
+        track_list,
+        rolling_df,
+        rolling_window,
+        rolling_min_n,
+    )
 
     excel_path = OUTPUT_DIR / f"{factor_name}_IC_analysis.xlsx"
     figure_path = OUTPUT_DIR / f"{factor_name}_rolling_IC.png"

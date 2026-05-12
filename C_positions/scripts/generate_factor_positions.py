@@ -72,9 +72,25 @@ def validate_factor_position_df(factor_id: str, position_df: pd.DataFrame) -> No
         raise ValueError(f"{factor_id}: non-null target weights do not sum to 1")
 
 
-def format_signal_distribution(signal_series: pd.Series) -> str:
-    counts = signal_series.value_counts(dropna=False).sort_index()
-    return ", ".join(f"{index}: {value}" for index, value in counts.items())
+def format_signal_summary(signal_series: pd.Series) -> str:
+    total_count = len(signal_series)
+    non_null_count = int(signal_series.notna().sum())
+    nan_ratio = signal_series.isna().mean() if total_count else 0.0
+    valid_signal = signal_series.dropna()
+
+    if valid_signal.empty:
+        value_summary = "min=NaN, median=NaN, max=NaN"
+    else:
+        value_summary = (
+            f"min={valid_signal.min():.6g}, "
+            f"median={valid_signal.median():.6g}, "
+            f"max={valid_signal.max():.6g}"
+        )
+
+    return (
+        f"rows={total_count}, non_null={non_null_count}, "
+        f"nan_ratio={nan_ratio:.2%}, {value_summary}"
+    )
 
 
 def main() -> None:
@@ -102,8 +118,8 @@ def main() -> None:
         output_path = output_dir / f"{factor_id}_position.xlsx"
         position_df.to_excel(output_path, index=True)
 
-        distribution = format_signal_distribution(position_df["signal_ls"])
-        print(f"{factor_id}: {distribution}")
+        summary = format_signal_summary(position_df["signal_ls"])
+        print(f"{factor_id}: {summary}")
         print(f"written: {output_path}")
 
 

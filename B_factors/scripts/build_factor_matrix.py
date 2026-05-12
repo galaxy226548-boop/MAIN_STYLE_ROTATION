@@ -39,6 +39,21 @@ def generate_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
     return factor_source_df
 
 
+def _print_factor_output_summary(label: str, mounted_factor_df: pd.DataFrame, signal_ls_df: pd.DataFrame) -> None:
+    print(f"{label} mounted_normalized_factor_df shape:", mounted_factor_df.shape)
+    print(f"{label} signal_ls_df shape:", signal_ls_df.shape)
+    print(f"{label} factor columns:", list(mounted_factor_df.columns))
+    print(f"{label} factor non-null summary:")
+    for factor_col in mounted_factor_df.columns:
+        series = mounted_factor_df[factor_col]
+        print(
+            factor_col,
+            "non_na=", int(series.notna().sum()),
+            "first=", series.first_valid_index(),
+            "last=", series.last_valid_index(),
+        )
+
+
 def main() -> None:
     validate_prepared_mapping()
     data_df, market_df = load_default_data()
@@ -63,18 +78,7 @@ def main() -> None:
 
     for label, path in output_paths.items():
         print(f"{label} saved to:", path)
-    print("mounted_normalized_factor_df shape:", mounted_normalized_factor_df.shape)
-    print("signal_ls_df shape:", signal_ls_df.shape)
-    print("factor columns:", list(mounted_normalized_factor_df.columns))
-    print("factor non-null summary:")
-    for factor_col in mounted_normalized_factor_df.columns:
-        series = mounted_normalized_factor_df[factor_col]
-        print(
-            factor_col,
-            "non_na=", int(series.notna().sum()),
-            "first=", series.first_valid_index(),
-            "last=", series.last_valid_index(),
-        )
+    _print_factor_output_summary(PAPER_ID, mounted_normalized_factor_df, signal_ls_df)
 
 
 if __name__ == "__main__":
