@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import warnings
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timezone
@@ -293,24 +294,6 @@ def _month_aggregate(series, how="average"):
     return out
 
 
-def _data_month_end_series(monthly_series, data_index: pd.DatetimeIndex):
-    s = monthly_series.dropna().copy().sort_index()
-    if len(s) == 0:
-        return pd.Series(dtype="float64")
-    s.index = pd.to_datetime(s.index).to_period("M")
-    s = s[~s.index.duplicated(keep="last")]
-    data_index = pd.DatetimeIndex(data_index).sort_values()
-    last_data_date_by_month = pd.Series(data_index, index=data_index.to_period("M")).groupby(level=0).max()
-    target_dates = last_data_date_by_month.reindex(s.index)
-    valid = target_dates.notna()
-    out = pd.Series(
-        s.loc[valid].to_numpy(dtype="float64"),
-        index=pd.DatetimeIndex(target_dates.loc[valid].to_numpy()),
-        dtype="float64",
-    )
-    return out.sort_index()
-
-
 def _rolling_quantile_rank_year(series, year=5):
     s = series.dropna().sort_index()
     dates = s.index
@@ -423,6 +406,75 @@ def _macro_monthly_fallback_series(keyword: str, value_col: str = "今值") -> p
     return read_prepared_series("macro_monthly.parquet", candidates[0])
 
 
+def _fill_missing_current_from_next_prev(
+    out: pd.DataFrame,
+    date_col: str,
+    value_col: str,
+    keyword: str,
+    current_values: pd.Series,
+    prev_values: pd.Series | None,
+    duplicate_message_prefix: str,
+) -> pd.Series:
+    work = pd.DataFrame(
+        {
+            "date": pd.to_datetime(out[date_col], errors="coerce").to_numpy(),
+            "actual": pd.Series(current_values, index=out.index).to_numpy(dtype="float64"),
+        }
+    )
+    if prev_values is not None:
+        work["prev"] = pd.Series(prev_values, index=out.index).to_numpy(dtype="float64")
+    else:
+        work["prev"] = np.nan
+
+    work = work[work["date"].notna()].copy()
+    dup_count = int(work["date"].duplicated(keep=False).sum())
+    if dup_count > 0:
+        print(f"{duplicate_message_prefix} keyword {keyword!r} matched {dup_count} duplicate-date rows; keeping the last row per date.")
+        work = work[~work["date"].duplicated(keep="last")].copy()
+    work = work.sort_values("date")
+
+    if value_col not in {"今值", "actual"}:
+        return pd.Series(work["actual"].to_numpy(), index=work["date"], name=keyword).sort_index()
+
+    actual = pd.Series(work["actual"].to_numpy(), index=work["date"], name=keyword)
+    next_prev = pd.Series(work["prev"].to_numpy(), index=work["date"]).shift(-1)
+    next_date = pd.Series(work["date"].shift(-1).to_numpy(), index=work["date"])
+
+    comparable = actual.notna() & next_prev.notna()
+    mismatch = comparable & ~np.isclose(actual, next_prev, rtol=1e-9, atol=1e-12)
+    if mismatch.any():
+        rows = pd.DataFrame(
+            {
+                "date": actual.index[mismatch],
+                "actual": actual.loc[mismatch].to_numpy(),
+                "next_date": next_date.loc[mismatch].to_numpy(),
+                "next_prev": next_prev.loc[mismatch].to_numpy(),
+            }
+        )
+        warnings.warn(
+            f"Macro keyword {keyword!r} has {len(rows)} rows where current value does not match "
+            "the next row's previous value:\n"
+            f"{rows.head(10).to_string(index=False)}",
+            stacklevel=2,
+        )
+
+    fill_mask = actual.isna() & next_prev.notna()
+    if fill_mask.any():
+        actual.loc[fill_mask] = next_prev.loc[fill_mask]
+
+    remaining_missing = actual[actual.isna()]
+    if not remaining_missing.empty:
+        dates = [dt.strftime("%Y-%m-%d") for dt in remaining_missing.index[:10]]
+        suffix = "" if len(remaining_missing) <= 10 else f" ... total={len(remaining_missing)}"
+        warnings.warn(
+            f"Macro keyword {keyword!r} still has missing current values after next-prev fill: "
+            f"{dates}{suffix}",
+            stacklevel=2,
+        )
+
+    return actual.sort_index()
+
+
 def _load_china_macro_series(keyword, value_col="今值", required_contains=None, exclude_contains=None):
     macro = _load_macro_all()
     date_col = "日期" if "日期" in macro.columns else macro.columns[2]
@@ -449,11 +501,50 @@ def _load_china_macro_series(keyword, value_col="今值", required_contains=None
     out = out[out[date_col].notna()].copy()
     sort_cols = [x for x in [date_col, "来源文件", "来源sheet", "文件年月"] if x in out.columns]
     out = out.sort_values(sort_cols, na_position="first")
-    s = pd.Series(_as_numeric(out[value_col], percent_hint=percent_hint).to_numpy(), index=out[date_col], name=keyword).sort_index()
-    dup_count = int(s.index.duplicated(keep=False).sum())
-    if dup_count > 0:
-        print(f"Macro keyword {keyword!r} matched {dup_count} duplicate-date rows; keeping the last row per date.")
-        s = s[~s.index.duplicated(keep="last")]
+    current_values = _as_numeric(out[value_col], percent_hint=percent_hint)
+    prev_values = _as_numeric(out["前值"], percent_hint=percent_hint) if "前值" in out.columns else None
+    s = _fill_missing_current_from_next_prev(
+        out,
+        date_col=date_col,
+        value_col=value_col,
+        keyword=keyword,
+        current_values=current_values,
+        prev_values=prev_values,
+        duplicate_message_prefix="Macro",
+    )
+    return s.sort_index()
+
+
+def _load_china_macro_level_series(keyword: str, value_col: str = "今值") -> pd.Series:
+    """Load China macro calendar values as raw levels, without percent-style /100 scaling.
+
+    Use this for level/diffusion-index indicators such as PMI. Some macro indicator names
+    include "(%)" even though the usable value should remain 50.2 rather than 0.502.
+    """
+    macro = _load_macro_all()
+    date_col = "日期" if "日期" in macro.columns else macro.columns[2]
+    nation_col = "国家/地区" if "国家/地区" in macro.columns else macro.columns[4]
+    indicator_col = "指标名称" if "指标名称" in macro.columns else macro.columns[5]
+    mask = macro[nation_col].eq("中国")
+    mask &= macro[indicator_col].astype(str).str.contains(keyword, na=False, regex=False)
+    out = macro.loc[mask].copy()
+    if out.empty:
+        raise ValueError(f"macro.parquet 中找不到中国宏观指标：{keyword!r}")
+    out[date_col] = pd.to_datetime(out[date_col], errors="coerce")
+    out = out[out[date_col].notna()].copy()
+    sort_cols = [x for x in [date_col, "来源文件", "来源sheet", "文件年月"] if x in out.columns]
+    out = out.sort_values(sort_cols, na_position="first")
+    current_values = pd.to_numeric(out[value_col], errors="coerce")
+    prev_values = pd.to_numeric(out["前值"], errors="coerce") if "前值" in out.columns else None
+    s = _fill_missing_current_from_next_prev(
+        out,
+        date_col=date_col,
+        value_col=value_col,
+        keyword=keyword,
+        current_values=current_values,
+        prev_values=prev_values,
+        duplicate_message_prefix="Macro level",
+    )
     return s.sort_index()
 
 
@@ -485,6 +576,11 @@ def _register_factor(
     normalized_factor = normalized_factor_series.copy().sort_index()
     normalized_factor.index = pd.to_datetime(normalized_factor.index)
     normalized_factor = normalized_factor[~normalized_factor.index.duplicated(keep="last")]
+    missing_index = normalized_factor.index.difference(normalized_factor_df.index)
+    for dt in missing_index:
+        normalized_factor_df.loc[dt, :] = np.nan
+    if len(missing_index) > 0:
+        normalized_factor_df.sort_index(inplace=True)
     normalized_factor_df[factor_col] = normalized_factor.reindex(normalized_factor_df.index).astype("float64")
 
     print(
@@ -793,7 +889,11 @@ def mount_factor_source_frame(
 
     state_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "state"]
     if state_cols:
-        mounted_df.loc[:, state_cols] = factor_source_df[state_cols].shift(1).reindex(market_df.index)
+        state_values = factor_source_df[state_cols].ffill()
+        lookup_index = pd.DatetimeIndex(market_df.index) - pd.Timedelta(nanoseconds=1)
+        mounted_state = state_values.reindex(lookup_index, method="ffill")
+        mounted_state.index = market_df.index
+        mounted_df.loc[:, state_cols] = mounted_state
 
     event_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "event"]
     if event_cols:

@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from factor_utils import (
-    _data_month_end_series,
     _load_china_macro_series,
+    _load_china_macro_level_series,
     _register_factor,
     _rolling_quantile_rank_year,
     normalize_trade_dt,
@@ -29,13 +29,7 @@ def _calc_return(price: pd.Series, window: int) -> pd.Series:
 
 def _load_long_term_loan_yoy() -> pd.Series:
     yoy_col = "金融机构:人民币:中长期贷款余额:同比"
-    balance_col = "中国:金融机构各项贷款余额:中长期:人民币"
-
-    try:
-        return read_prepared_series("macro_monthly.parquet", yoy_col)
-    except KeyError:
-        balance = read_prepared_series("macro_monthly.parquet", balance_col)
-        return balance / balance.shift(12) - 1
+    return read_prepared_series("macro_monthly.parquet", yoy_col)
 
 
 def _load_style_components() -> dict[str, dict[pd.Timestamp, list[str]]]:
@@ -132,19 +126,19 @@ def generate_paper_odds_win_style_rotation_factor_source_frame(data_df: pd.DataF
     i002 = 1 - _rolling_quantile_rank_year(us6m, year=3)
     _register_factor(raw_factor_df, factor_source_df, "I002_raw", i002)
 
-    pmi = read_prepared_series("macro_monthly.parquet", "制造业PMI")
+    pmi = _load_china_macro_level_series("月官方制造业PMI", value_col="今值")
     g001_monthly = -(pmi.rolling(3, min_periods=3).mean() - pmi.rolling(36, min_periods=36).mean())
-    _register_factor(raw_factor_df, factor_source_df, "G001_raw", _data_month_end_series(g001_monthly, data_index))
+    _register_factor(raw_factor_df, factor_source_df, "G001_raw", g001_monthly)
 
     loan_yoy = _load_long_term_loan_yoy()
     g002_monthly = loan_yoy - loan_yoy.rolling(3, min_periods=3).mean()
-    _register_factor(raw_factor_df, factor_source_df, "G002_raw", _data_month_end_series(g002_monthly, data_index))
+    _register_factor(raw_factor_df, factor_source_df, "G002_raw", g002_monthly)
 
     cpi = _load_china_macro_series("CPI:同比", exclude_contains="核心")
     ppi = _load_china_macro_series("PPI:同比")
     cpi_ppi = (cpi - ppi).dropna().sort_index()
     p001_monthly = cpi_ppi.rolling(3, min_periods=3).mean() - cpi_ppi.rolling(12, min_periods=12).mean()
-    _register_factor(raw_factor_df, factor_source_df, "P001_raw", _data_month_end_series(p001_monthly, data_index))
+    _register_factor(raw_factor_df, factor_source_df, "P001_raw", p001_monthly)
 
     v001 = _strong_ratio_diff(data_index)
     _register_factor(raw_factor_df, factor_source_df, "V001_raw", v001)

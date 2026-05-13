@@ -308,24 +308,6 @@ def _month_aggregate(series, how="average"):
     return out
 
 
-def _data_month_end_series(monthly_series, data_index: pd.DatetimeIndex):
-    s = monthly_series.dropna().copy().sort_index()
-    if len(s) == 0:
-        return pd.Series(dtype="float64")
-    s.index = pd.to_datetime(s.index).to_period("M")
-    s = s[~s.index.duplicated(keep="last")]
-    data_index = pd.DatetimeIndex(data_index).sort_values()
-    last_data_date_by_month = pd.Series(data_index, index=data_index.to_period("M")).groupby(level=0).max()
-    target_dates = last_data_date_by_month.reindex(s.index)
-    valid = target_dates.notna()
-    out = pd.Series(
-        s.loc[valid].to_numpy(dtype="float64"),
-        index=pd.DatetimeIndex(target_dates.loc[valid].to_numpy()),
-        dtype="float64",
-    )
-    return out.sort_index()
-
-
 def _rolling_quantile_rank_year(series, year=5):
     s = series.dropna().sort_index()
     dates = s.index
@@ -415,6 +397,33 @@ def _load_china_macro_series(keyword, value_col="今值", required_contains=None
     return s.sort_index()
 
 
+def _load_china_macro_level_series(keyword: str, value_col: str = "今值") -> pd.Series:
+    """Load China macro calendar values as raw levels, without percent-style /100 scaling.
+
+    Use this for level/diffusion-index indicators such as PMI. Some macro indicator names
+    include "(%)" even though the usable value should remain 50.2 rather than 0.502.
+    """
+    macro = _load_macro_all()
+    date_col = "日期" if "日期" in macro.columns else macro.columns[2]
+    nation_col = "国家/地区" if "国家/地区" in macro.columns else macro.columns[4]
+    indicator_col = "指标名称" if "指标名称" in macro.columns else macro.columns[5]
+    mask = macro[nation_col].eq("中国")
+    mask &= macro[indicator_col].astype(str).str.contains(keyword, na=False, regex=False)
+    out = macro.loc[mask].copy()
+    if out.empty:
+        raise ValueError(f"macro.parquet 中找不到中国宏观指标：{keyword!r}")
+    out[date_col] = pd.to_datetime(out[date_col], errors="coerce")
+    out = out[out[date_col].notna()].copy()
+    sort_cols = [x for x in [date_col, "来源文件", "来源sheet", "文件年月"] if x in out.columns]
+    out = out.sort_values(sort_cols, na_position="first")
+    s = pd.Series(pd.to_numeric(out[value_col], errors="coerce").to_numpy(), index=out[date_col], name=keyword).sort_index()
+    dup_count = int(s.index.duplicated(keep=False).sum())
+    if dup_count > 0:
+        print(f"Macro level keyword {keyword!r} matched {dup_count} duplicate-date rows; keeping the last row per date.")
+        s = s[~s.index.duplicated(keep="last")]
+    return s.sort_index()
+
+
 def _rolling_sum_ratio_minus_one(series, window=12, shift=11):
     rolling_sum = series.dropna().sort_index().rolling(window=window, min_periods=window).sum().dropna()
     division = rolling_sum / rolling_sum.shift(shift) - 1
@@ -443,6 +452,11 @@ def _register_factor(
     normalized_factor = normalized_factor_series.copy().sort_index()
     normalized_factor.index = pd.to_datetime(normalized_factor.index)
     normalized_factor = normalized_factor[~normalized_factor.index.duplicated(keep="last")]
+    missing_index = normalized_factor.index.difference(normalized_factor_df.index)
+    for dt in missing_index:
+        normalized_factor_df.loc[dt, :] = np.nan
+    if len(missing_index) > 0:
+        normalized_factor_df.sort_index(inplace=True)
     normalized_factor_df[factor_col] = normalized_factor.reindex(normalized_factor_df.index).astype("float64")
 
     print(
@@ -635,7 +649,7 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 新增中长期人民币贷款 (ZHAO05)
     sub_1 = _read_indicator_series("DebtData.xlsx", "中国:金融机构:新增人民币贷款:中长期:当月值")
-    ZHAO05_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    ZHAO05_raw = _rolling_sum_ratio_minus_one(sub_1, window=12)
     _register_factor(raw_factor_df, factor_source_df, "ZHAO05_raw", ZHAO05_raw)
 
     # ### PMI (ZHAO06)
@@ -660,12 +674,12 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 新增规上工业企业利润总额 (ZHAO09)s
     sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:利润总额:规模以上工业企业:累计值")
-    ZHAO09_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    ZHAO09_raw = _rolling_sum_ratio_minus_one(sub_1, window=12)
     _register_factor(raw_factor_df, factor_source_df, "ZHAO09_raw", ZHAO09_raw)
 
     # ### 工业企业产成品存货 (ZHAO10)
     sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:产成品存货:规模以上工业企业:同比")
-    ZHAO10_raw = _data_month_end_series(0 - sub_1, data_index)
+    ZHAO10_raw = 0 - sub_1
     _register_factor(raw_factor_df, factor_source_df, "ZHAO10_raw", ZHAO10_raw)
 
     # ### 新增社零 (ZHAO11)
@@ -680,7 +694,7 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 一般公共预算支出 (ZHAO13)
     sub_1 = _read_indicator_series("公共预算支出.xlsx", "中国:一般公共预算支出:当月同比(1-2月合并)")
-    ZHAO13_raw = _data_month_end_series(sub_1, data_index)
+    ZHAO13_raw = sub_1
     _register_factor(raw_factor_df, factor_source_df, "ZHAO13_raw", ZHAO13_raw)
 
     # ### 美元兑人民币中间价 (ZHAO14)
@@ -802,7 +816,11 @@ def mount_factor_source_frame(
 
     state_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "state"]
     if state_cols:
-        mounted_df.loc[:, state_cols] = factor_source_df[state_cols].shift(1).reindex(market_df.index)
+        state_values = factor_source_df[state_cols].ffill()
+        lookup_index = pd.DatetimeIndex(market_df.index) - pd.Timedelta(nanoseconds=1)
+        mounted_state = state_values.reindex(lookup_index, method="ffill")
+        mounted_state.index = market_df.index
+        mounted_df.loc[:, state_cols] = mounted_state
 
     event_cols = [col for col in factor_source_df.columns if metadata[col]["signal_type"] == "event"]
     if event_cols:

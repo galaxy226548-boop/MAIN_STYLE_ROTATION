@@ -9,7 +9,6 @@ import pandas as pd
 
 from factor_utils import (
     _YoY,
-    _data_month_end_series,
     _find_data_file,
     _load_china_macro_series,
     _load_macro_all,
@@ -166,7 +165,7 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 新增中长期人民币贷款 (ZHAO05)
     sub_1 = _read_indicator_series("DebtData.xlsx", "中国:金融机构:新增人民币贷款:中长期:当月值")
-    ZHAO05_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    ZHAO05_raw = _rolling_sum_ratio_minus_one(sub_1, window=12)
     _register_factor(raw_factor_df, factor_source_df, "ZHAO05_raw", ZHAO05_raw)
 
     # ### PMI (ZHAO06)
@@ -191,12 +190,12 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 新增规上工业企业利润总额 (ZHAO09)s
     sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:利润总额:规模以上工业企业:累计值")
-    ZHAO09_raw = _data_month_end_series(_rolling_sum_ratio_minus_one(sub_1, window=12), data_index)
+    ZHAO09_raw = _rolling_sum_ratio_minus_one(sub_1, window=12)
     _register_factor(raw_factor_df, factor_source_df, "ZHAO09_raw", ZHAO09_raw)
 
     # ### 工业企业产成品存货 (ZHAO10)
     sub_1 = _read_indicator_series("规模以上工业 招证资配.xlsx", "中国:产成品存货:规模以上工业企业:同比")
-    ZHAO10_raw = _data_month_end_series(0 - sub_1, data_index)
+    ZHAO10_raw = 0 - sub_1
     _register_factor(raw_factor_df, factor_source_df, "ZHAO10_raw", ZHAO10_raw)
 
     # ### 新增社零 (ZHAO11)
@@ -211,7 +210,7 @@ def generate_zhao_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
 
     # ### 一般公共预算支出 (ZHAO13)
     sub_1 = _read_indicator_series("公共预算支出.xlsx", "中国:一般公共预算支出:当月同比(1-2月合并)")
-    ZHAO13_raw = _data_month_end_series(sub_1, data_index)
+    ZHAO13_raw = sub_1
     _register_factor(raw_factor_df, factor_source_df, "ZHAO13_raw", ZHAO13_raw)
 
     # ### 美元兑人民币中间价 (ZHAO14)

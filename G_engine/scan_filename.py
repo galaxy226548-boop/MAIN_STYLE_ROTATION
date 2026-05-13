@@ -10,7 +10,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 
 # 数据文件夹：MAIN_STYLE_ROTATION/F_grouping
-DATA_DIR = PROJECT_ROOT / "F_grouping" / "input_COMB"
+DATA_DIR = PROJECT_ROOT / "A_data" / "data"
 
 # ========== 2. 辅助函数：读取第一行所有值 ==========
 def read_first_row_values(file_path: Path, suffix: str, sheet_name=None):
