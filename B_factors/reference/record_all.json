@@ -9838,13 +9838,13 @@
           "availability": null,
           "signal_type": "state",
           "source_type": "equity_price",
-          "calc_method": "过去4周成长收益率-价值收益率",
+          "calc_method": "近20个holding_date成长风格加权收盘价对数收益率-价值风格加权收盘价对数收益率",
           "signal_rule": ">0 => growth; <0 => value",
-          "condition": "calc_rolling_return(growth_price, window=4, return_type=Config.RETURN_TYPE) - calc_rolling_return(value_price, window=4, return_type=Config.RETURN_TYPE)",
-          "docu": "data_public/style_indexes/growth_index.xlsx, data_public/style_indexes/value_index.xlsx",
-          "data_field": "close",
+          "condition": "log(weighted_close(growth_factor_Fri, holding_date) / weighted_close(growth_factor_Fri, holding_date.shift(20))) - log(weighted_close(value_factor_Fri, holding_date) / weighted_close(value_factor_Fri, holding_date.shift(20)))",
+          "docu": "A_data/prepared_data/growth_factor_Fri.parquet, A_data/prepared_data/value_factor_Fri.parquet",
+          "data_field": "holding_date, weight, close",
           "bar": "0",
-          "notes": "成长/价值价格序列可使用全指成长全收益(H00057.CSI)和全指价值全收益(H00058.CSI)或自建风格指数"
+          "notes": "每日风格收盘价按sum(close * weight)计算；缺失close不重归一权重，全缺失日期保持NaN"
         },
         {
           "paper_id": "如何从赔率和胜率看成长价值轮动——市场风格轮动系列",

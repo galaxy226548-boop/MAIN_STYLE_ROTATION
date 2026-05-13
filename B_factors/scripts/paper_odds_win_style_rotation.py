@@ -17,14 +17,38 @@ from factor_utils import (
 
 
 PAPER_ID = "如何从赔率和胜率看成长价值轮动——市场风格轮动系列"
-GROWTH_INDEX_CODE = "399370.SZ"
-VALUE_INDEX_CODE = "399371.SZ"
+GROWTH_STYLE_KEY = "growth"
+VALUE_STYLE_KEY = "value"
+STYLE_COMPONENT_TABLES = {
+    GROWTH_STYLE_KEY: "growth_factor_Fri.parquet",
+    VALUE_STYLE_KEY: "value_factor_Fri.parquet",
+}
 BASE_FACTOR_IDS = ["I001", "I002", "G001", "G002", "P001", "V001", "V002"]
 FACTOR_IDS = [*BASE_FACTOR_IDS, "W001", "W002"]
 
 
-def _calc_return(price: pd.Series, window: int) -> pd.Series:
-    return price / price.shift(window) - 1
+def _calc_log_return(price: pd.Series, window: int) -> pd.Series:
+    price = pd.to_numeric(price, errors="coerce").sort_index()
+    previous_price = price.shift(window)
+    valid = price.gt(0) & previous_price.gt(0)
+    log_return = pd.Series(np.nan, index=price.index, dtype="float64")
+    log_return.loc[valid] = np.log(price.loc[valid] / previous_price.loc[valid])
+    return log_return
+
+
+def _load_weighted_style_close(table_name: str) -> pd.Series:
+    style_df = pd.read_parquet(
+        prepared_data_dir / table_name,
+        columns=["holding_date", "weight", "close"],
+    )
+    style_df["holding_date"] = pd.to_datetime(style_df["holding_date"], errors="coerce")
+    style_df = style_df[style_df["holding_date"].notna()].copy()
+    style_df["weight"] = pd.to_numeric(style_df["weight"], errors="coerce")
+    style_df["close"] = pd.to_numeric(style_df["close"], errors="coerce")
+    weighted_close = style_df["close"] * style_df["weight"]
+    close = weighted_close.groupby(style_df["holding_date"]).sum(min_count=1).sort_index()
+    close.name = table_name.removesuffix(".parquet")
+    return close.astype("float64")
 
 
 def _load_long_term_loan_yoy() -> pd.Series:
@@ -33,21 +57,23 @@ def _load_long_term_loan_yoy() -> pd.Series:
 
 
 def _load_style_components() -> dict[str, dict[pd.Timestamp, list[str]]]:
-    comp = pd.read_parquet(prepared_data_dir / "IndexComponents.parquet")
-    comp["TRADE_DT"] = normalize_trade_dt(comp["TRADE_DT"])
-    comp = comp[comp["TRADE_DT"].notna()].copy()
-    comp["S_INFO_WINDCODE"] = comp["S_INFO_WINDCODE"].astype(str).str.strip()
-    comp["ticker"] = comp["S_CON_WINDCODE"].astype(str).str.slice(0, 6).str.zfill(6)
-
     out: dict[str, dict[pd.Timestamp, list[str]]] = {}
-    for index_code in [GROWTH_INDEX_CODE, VALUE_INDEX_CODE]:
-        sub = comp[comp["S_INFO_WINDCODE"].eq(index_code)]
-        out[index_code] = {
+    for style_key, table_name in STYLE_COMPONENT_TABLES.items():
+        comp = pd.read_parquet(
+            prepared_data_dir / table_name,
+            columns=["holding_date", "component"],
+        )
+        comp["holding_date"] = pd.to_datetime(comp["holding_date"], errors="coerce").dt.normalize()
+        comp = comp[comp["holding_date"].notna()].copy()
+        comp["ticker"] = comp["component"].astype(str).str.strip().str.slice(0, 6).str.zfill(6)
+        comp = comp[comp["ticker"].str.fullmatch(r"\d{6}", na=False)]
+
+        out[style_key] = {
             dt: sorted(group["ticker"].dropna().unique().tolist())
-            for dt, group in sub.groupby("TRADE_DT")
+            for dt, group in comp.groupby("holding_date")
         }
-        if not out[index_code]:
-            raise ValueError(f"IndexComponents.parquet 中找不到 {index_code} 成分股")
+        if not out[style_key]:
+            raise ValueError(f"{table_name} 中找不到可用的 holding_date/component 成分股")
     return out
 
 
@@ -88,16 +114,16 @@ def _strong_ratio_diff(data_index: pd.DatetimeIndex) -> pd.Series:
             continue
         row = strong.loc[dt]
         ratios = {}
-        for index_code in [GROWTH_INDEX_CODE, VALUE_INDEX_CODE]:
-            dates = component_dates[index_code]
+        for style_key in [GROWTH_STYLE_KEY, VALUE_STYLE_KEY]:
+            dates = component_dates[style_key]
             loc = dates.searchsorted(dt, side="right") - 1
             if loc < 0:
                 continue
-            tickers = [ticker for ticker in components[index_code][dates[loc]] if ticker in strong.columns]
+            tickers = [ticker for ticker in components[style_key][dates[loc]] if ticker in strong.columns]
             if tickers:
-                ratios[index_code] = row[tickers].mean(skipna=True)
-        if GROWTH_INDEX_CODE in ratios and VALUE_INDEX_CODE in ratios:
-            result.at[dt] = ratios[GROWTH_INDEX_CODE] - ratios[VALUE_INDEX_CODE]
+                ratios[style_key] = row[tickers].mean(skipna=True)
+        if GROWTH_STYLE_KEY in ratios and VALUE_STYLE_KEY in ratios:
+            result.at[dt] = ratios[GROWTH_STYLE_KEY] - ratios[VALUE_STYLE_KEY]
     return result
 
 
@@ -143,7 +169,9 @@ def generate_paper_odds_win_style_rotation_factor_source_frame(data_df: pd.DataF
     v001 = _strong_ratio_diff(data_index)
     _register_factor(raw_factor_df, factor_source_df, "V001_raw", v001)
 
-    v002 = _calc_return(data_df["close_g"], 20) - _calc_return(data_df["close_v"], 20)
+    growth_close = _load_weighted_style_close("growth_factor_Fri.parquet")
+    value_close = _load_weighted_style_close("value_factor_Fri.parquet")
+    v002 = _calc_log_return(growth_close, 20) - _calc_log_return(value_close, 20)
     _register_factor(raw_factor_df, factor_source_df, "V002_raw", v002)
 
     score_df = pd.concat(
