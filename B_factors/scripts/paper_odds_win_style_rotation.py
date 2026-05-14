@@ -10,7 +10,6 @@ from factor_utils import (
     _load_china_macro_level_series,
     _register_factor,
     _rolling_quantile_rank_year,
-    normalize_trade_dt,
     prepared_data_dir,
     read_prepared_series,
 )
@@ -23,30 +22,63 @@ STYLE_COMPONENT_TABLES = {
     GROWTH_STYLE_KEY: "growth_factor_Fri.parquet",
     VALUE_STYLE_KEY: "value_factor_Fri.parquet",
 }
+ADJUSTED_CLOSE_TABLE = "S_DQ_ADJCLOSE.parquet"
+TRADE_DATE_COL = "TRADE_DT"
 BASE_FACTOR_IDS = ["I001", "I002", "G001", "G002", "P001", "V001", "V002"]
 FACTOR_IDS = [*BASE_FACTOR_IDS, "W001", "W002"]
+_ADJUSTED_CLOSE_CACHE: pd.DataFrame | None = None
 
 
-def _calc_log_return(price: pd.Series, window: int) -> pd.Series:
-    price = pd.to_numeric(price, errors="coerce").sort_index()
-    previous_price = price.shift(window)
-    valid = price.gt(0) & previous_price.gt(0)
-    log_return = pd.Series(np.nan, index=price.index, dtype="float64")
-    log_return.loc[valid] = np.log(price.loc[valid] / previous_price.loc[valid])
-    return log_return
+def _load_adjusted_close(tickers: list[str] | set[str] | None = None) -> pd.DataFrame:
+    global _ADJUSTED_CLOSE_CACHE
+    if _ADJUSTED_CLOSE_CACHE is None:
+        close = pd.read_parquet(prepared_data_dir / ADJUSTED_CLOSE_TABLE)
+        close[TRADE_DATE_COL] = pd.to_datetime(close[TRADE_DATE_COL], errors="coerce").dt.normalize()
+        close = close[close[TRADE_DATE_COL].notna()].copy()
+        close = close.set_index(TRADE_DATE_COL).sort_index()
+        close = close[~close.index.duplicated(keep="last")]
+
+        ticker_cols = {}
+        for col in close.columns:
+            text = str(col).strip()
+            base, sep, exchange = text.partition(".")
+            if sep and exchange in {"SZ", "SH", "BJ"} and len(base) == 6 and base.isdigit():
+                ticker_cols[col] = base
+        close = close.loc[:, list(ticker_cols)].rename(columns=ticker_cols)
+        close = close.loc[:, ~close.columns.duplicated(keep="first")]
+        _ADJUSTED_CLOSE_CACHE = close.apply(pd.to_numeric, errors="coerce").astype("float64")
+
+    if tickers is None:
+        return _ADJUSTED_CLOSE_CACHE
+
+    selected = [ticker for ticker in sorted(set(tickers)) if ticker in _ADJUSTED_CLOSE_CACHE.columns]
+    return _ADJUSTED_CLOSE_CACHE.loc[:, selected]
 
 
-def _load_weighted_style_close(table_name: str) -> pd.Series:
+def _load_weighted_style_close(table_name: str, adjusted_close: pd.DataFrame) -> pd.Series:
     style_df = pd.read_parquet(
         prepared_data_dir / table_name,
-        columns=["holding_date", "weight", "close"],
+        columns=["holding_date", "component", "weight"],
     )
-    style_df["holding_date"] = pd.to_datetime(style_df["holding_date"], errors="coerce")
+    style_df["holding_date"] = pd.to_datetime(style_df["holding_date"], errors="coerce").dt.normalize()
     style_df = style_df[style_df["holding_date"].notna()].copy()
+    style_df["ticker"] = style_df["component"].astype(str).str.strip().str.slice(0, 6).str.zfill(6)
+    style_df = style_df[style_df["ticker"].isin(adjusted_close.columns)]
     style_df["weight"] = pd.to_numeric(style_df["weight"], errors="coerce")
-    style_df["close"] = pd.to_numeric(style_df["close"], errors="coerce")
+
+    row_pos = adjusted_close.index.get_indexer(style_df["holding_date"])
+    col_pos = adjusted_close.columns.get_indexer(style_df["ticker"])
+    valid = (row_pos >= 0) & (col_pos >= 0)
+    style_df = style_df.loc[valid].copy()
+
+    close_values = adjusted_close.to_numpy()[row_pos[valid], col_pos[valid]]
+    style_df["close"] = close_values
+    style_df = style_df[style_df["close"].notna() & style_df["weight"].notna()].copy()
+
     weighted_close = style_df["close"] * style_df["weight"]
-    close = weighted_close.groupby(style_df["holding_date"]).sum(min_count=1).sort_index()
+    numerator = weighted_close.groupby(style_df["holding_date"]).sum(min_count=1)
+    denominator = style_df["weight"].groupby(style_df["holding_date"]).sum(min_count=1)
+    close = (numerator / denominator).replace([np.inf, -np.inf], np.nan).sort_index()
     close.name = table_name.removesuffix(".parquet")
     return close.astype("float64")
 
@@ -87,21 +119,7 @@ def _strong_ratio_diff(data_index: pd.DatetimeIndex) -> pd.Series:
             for ticker in tickers
         }
     )
-
-    mkt = pd.read_parquet(
-        prepared_data_dir / "mktP.parquet",
-        columns=["Stkcd", "Trddt", "Clsprc"],
-    )
-    mkt["Trddt"] = normalize_trade_dt(mkt["Trddt"])
-    mkt = mkt[mkt["Trddt"].notna()].copy()
-    mkt["Stkcd"] = mkt["Stkcd"].astype(str).str.zfill(6)
-    mkt = mkt[mkt["Stkcd"].isin(all_tickers)]
-
-    close = (
-        mkt.pivot_table(index="Trddt", columns="Stkcd", values="Clsprc", aggfunc="last")
-        .sort_index()
-        .apply(pd.to_numeric, errors="coerce")
-    )
+    close = _load_adjusted_close(all_tickers)
     strong = close.rolling(5, min_periods=5).mean() > close.rolling(20, min_periods=20).mean()
 
     component_dates = {
@@ -169,9 +187,10 @@ def generate_paper_odds_win_style_rotation_factor_source_frame(data_df: pd.DataF
     v001 = _strong_ratio_diff(data_index)
     _register_factor(raw_factor_df, factor_source_df, "V001_raw", v001)
 
-    growth_close = _load_weighted_style_close("growth_factor_Fri.parquet")
-    value_close = _load_weighted_style_close("value_factor_Fri.parquet")
-    v002 = _calc_log_return(growth_close, 20) - _calc_log_return(value_close, 20)
+    adjusted_close = _load_adjusted_close()
+    growth_close = _load_weighted_style_close("growth_factor_Fri.parquet", adjusted_close)
+    value_close = _load_weighted_style_close("value_factor_Fri.parquet", adjusted_close)
+    v002 = growth_close.pct_change(20, fill_method=None) - value_close.pct_change(20, fill_method=None)
     _register_factor(raw_factor_df, factor_source_df, "V002_raw", v002)
 
     score_df = pd.concat(
