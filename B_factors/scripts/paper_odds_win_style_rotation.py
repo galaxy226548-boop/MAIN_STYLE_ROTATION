@@ -10,18 +10,18 @@ from factor_utils import (
     _load_china_macro_level_series,
     _register_factor,
     _rolling_quantile_rank_year,
+    normalize_trade_dt,
     prepared_data_dir,
     read_prepared_series,
 )
 
 
 PAPER_ID = "如何从赔率和胜率看成长价值轮动——市场风格轮动系列"
-GROWTH_STYLE_KEY = "growth"
-VALUE_STYLE_KEY = "value"
-STYLE_COMPONENT_TABLES = {
-    GROWTH_STYLE_KEY: "growth_factor_Fri.parquet",
-    VALUE_STYLE_KEY: "value_factor_Fri.parquet",
-}
+GROWTH_INDEX_CODE = "399370.SZ"
+VALUE_INDEX_CODE = "399371.SZ"
+STYLE_INDEX_CODES = [GROWTH_INDEX_CODE, VALUE_INDEX_CODE]
+INDEX_CLOSE_TABLE = "AIndexEODPrices.parquet"
+INDEX_COMPONENT_TABLE = "AIndexHS300FreeWeight.parquet"
 ADJUSTED_CLOSE_TABLE = "S_DQ_ADJCLOSE.parquet"
 TRADE_DATE_COL = "TRADE_DT"
 BASE_FACTOR_IDS = ["I001", "I002", "G001", "G002", "P001", "V001", "V002"]
@@ -29,58 +29,58 @@ FACTOR_IDS = [*BASE_FACTOR_IDS, "W001", "W002"]
 _ADJUSTED_CLOSE_CACHE: pd.DataFrame | None = None
 
 
+def _signal_from_diff(diff: pd.Series) -> pd.Series:
+    signal = pd.Series(
+        np.select([diff > 0, diff < 0], [1, -1], default=0),
+        index=diff.index,
+        dtype="float64",
+    )
+    signal.loc[diff.isna()] = np.nan
+    return signal
+
+
+def _load_index_close(index_code: str) -> pd.Series:
+    index_price = pd.read_parquet(
+        prepared_data_dir / INDEX_CLOSE_TABLE,
+        columns=["S_INFO_WINDCODE", TRADE_DATE_COL, "S_DQ_CLOSE"],
+        filters=[("S_INFO_WINDCODE", "=", index_code)],
+    )
+    index_price[TRADE_DATE_COL] = normalize_trade_dt(index_price[TRADE_DATE_COL])
+    index_price = index_price[index_price[TRADE_DATE_COL].notna()].copy()
+    close = (
+        index_price.sort_values(TRADE_DATE_COL)
+        .drop_duplicates(subset=TRADE_DATE_COL, keep="last")
+        .set_index(TRADE_DATE_COL)["S_DQ_CLOSE"]
+    )
+    close = pd.to_numeric(close, errors="coerce").sort_index().astype("float64")
+    close.name = index_code
+    return close
+
+
 def _load_adjusted_close(tickers: list[str] | set[str] | None = None) -> pd.DataFrame:
     global _ADJUSTED_CLOSE_CACHE
     if _ADJUSTED_CLOSE_CACHE is None:
         close = pd.read_parquet(prepared_data_dir / ADJUSTED_CLOSE_TABLE)
-        close[TRADE_DATE_COL] = pd.to_datetime(close[TRADE_DATE_COL], errors="coerce").dt.normalize()
+        close[TRADE_DATE_COL] = normalize_trade_dt(close[TRADE_DATE_COL])
         close = close[close[TRADE_DATE_COL].notna()].copy()
         close = close.set_index(TRADE_DATE_COL).sort_index()
         close = close[~close.index.duplicated(keep="last")]
 
-        ticker_cols = {}
-        for col in close.columns:
-            text = str(col).strip()
-            base, sep, exchange = text.partition(".")
-            if sep and exchange in {"SZ", "SH", "BJ"} and len(base) == 6 and base.isdigit():
-                ticker_cols[col] = base
-        close = close.loc[:, list(ticker_cols)].rename(columns=ticker_cols)
+        ticker_cols = [
+            col
+            for col in close.columns
+            if str(col).strip().split(".")[0].isdigit()
+        ]
+        close = close.loc[:, ticker_cols]
         close = close.loc[:, ~close.columns.duplicated(keep="first")]
+        close.columns = close.columns.astype(str).str.strip()
         _ADJUSTED_CLOSE_CACHE = close.apply(pd.to_numeric, errors="coerce").astype("float64")
 
     if tickers is None:
         return _ADJUSTED_CLOSE_CACHE
 
     selected = [ticker for ticker in sorted(set(tickers)) if ticker in _ADJUSTED_CLOSE_CACHE.columns]
-    return _ADJUSTED_CLOSE_CACHE.loc[:, selected]
-
-
-def _load_weighted_style_close(table_name: str, adjusted_close: pd.DataFrame) -> pd.Series:
-    style_df = pd.read_parquet(
-        prepared_data_dir / table_name,
-        columns=["holding_date", "component", "weight"],
-    )
-    style_df["holding_date"] = pd.to_datetime(style_df["holding_date"], errors="coerce").dt.normalize()
-    style_df = style_df[style_df["holding_date"].notna()].copy()
-    style_df["ticker"] = style_df["component"].astype(str).str.strip().str.slice(0, 6).str.zfill(6)
-    style_df = style_df[style_df["ticker"].isin(adjusted_close.columns)]
-    style_df["weight"] = pd.to_numeric(style_df["weight"], errors="coerce")
-
-    row_pos = adjusted_close.index.get_indexer(style_df["holding_date"])
-    col_pos = adjusted_close.columns.get_indexer(style_df["ticker"])
-    valid = (row_pos >= 0) & (col_pos >= 0)
-    style_df = style_df.loc[valid].copy()
-
-    close_values = adjusted_close.to_numpy()[row_pos[valid], col_pos[valid]]
-    style_df["close"] = close_values
-    style_df = style_df[style_df["close"].notna() & style_df["weight"].notna()].copy()
-
-    weighted_close = style_df["close"] * style_df["weight"]
-    numerator = weighted_close.groupby(style_df["holding_date"]).sum(min_count=1)
-    denominator = style_df["weight"].groupby(style_df["holding_date"]).sum(min_count=1)
-    close = (numerator / denominator).replace([np.inf, -np.inf], np.nan).sort_index()
-    close.name = table_name.removesuffix(".parquet")
-    return close.astype("float64")
+    return _ADJUSTED_CLOSE_CACHE.loc[:, selected].copy()
 
 
 def _load_long_term_loan_yoy() -> pd.Series:
@@ -90,26 +90,51 @@ def _load_long_term_loan_yoy() -> pd.Series:
 
 def _load_style_components() -> dict[str, dict[pd.Timestamp, list[str]]]:
     out: dict[str, dict[pd.Timestamp, list[str]]] = {}
-    for style_key, table_name in STYLE_COMPONENT_TABLES.items():
+    for index_code in STYLE_INDEX_CODES:
         comp = pd.read_parquet(
-            prepared_data_dir / table_name,
-            columns=["holding_date", "component"],
+            prepared_data_dir / INDEX_COMPONENT_TABLE,
+            columns=["S_INFO_WINDCODE", "S_CON_WINDCODE", TRADE_DATE_COL],
+            filters=[("S_INFO_WINDCODE", "=", index_code)],
         )
-        comp["holding_date"] = pd.to_datetime(comp["holding_date"], errors="coerce").dt.normalize()
-        comp = comp[comp["holding_date"].notna()].copy()
-        comp["ticker"] = comp["component"].astype(str).str.strip().str.slice(0, 6).str.zfill(6)
-        comp = comp[comp["ticker"].str.fullmatch(r"\d{6}", na=False)]
+        comp[TRADE_DATE_COL] = normalize_trade_dt(comp[TRADE_DATE_COL])
+        comp = comp[comp[TRADE_DATE_COL].notna()].copy()
+        comp["ticker"] = comp["S_CON_WINDCODE"].astype(str).str.strip()
+        comp = comp[comp["ticker"].str.fullmatch(r"\d{6}\.(SZ|SH|BJ)", na=False)]
 
-        out[style_key] = {
+        out[index_code] = {
             dt: sorted(group["ticker"].dropna().unique().tolist())
-            for dt, group in comp.groupby("holding_date")
+            for dt, group in comp.groupby(TRADE_DATE_COL)
         }
-        if not out[style_key]:
-            raise ValueError(f"{table_name} 中找不到可用的 holding_date/component 成分股")
+        if not out[index_code]:
+            raise ValueError(f"{INDEX_COMPONENT_TABLE} 中找不到 {index_code} 成分股")
     return out
 
 
-def _strong_ratio_diff(data_index: pd.DatetimeIndex) -> pd.Series:
+def _strong_ratio(
+    index_code: str,
+    close_wide: pd.DataFrame,
+    components_by_index: dict[str, dict[pd.Timestamp, list[str]]],
+    ma_short: int = 5,
+    ma_long: int = 20,
+) -> pd.Series:
+    components = components_by_index[index_code]
+    component_dates = pd.DatetimeIndex(sorted(components.keys()))
+    ma_s = close_wide.rolling(ma_short, min_periods=ma_short).mean()
+    ma_l = close_wide.rolling(ma_long, min_periods=ma_long).mean()
+    is_strong = ma_s > ma_l
+
+    ratio = pd.Series(np.nan, index=close_wide.index, dtype="float64")
+    for dt in close_wide.index:
+        loc = component_dates.searchsorted(dt, side="right") - 1
+        if loc < 0:
+            continue
+        tickers = [ticker for ticker in components[component_dates[loc]] if ticker in is_strong.columns]
+        if tickers:
+            ratio.at[dt] = is_strong.loc[dt, tickers].fillna(False).sum() / len(tickers)
+    return ratio
+
+
+def _constituent_momentum_signal(data_index: pd.DatetimeIndex) -> pd.Series:
     components = _load_style_components()
     all_tickers = sorted(
         {
@@ -120,29 +145,20 @@ def _strong_ratio_diff(data_index: pd.DatetimeIndex) -> pd.Series:
         }
     )
     close = _load_adjusted_close(all_tickers)
-    strong = close.rolling(5, min_periods=5).mean() > close.rolling(20, min_periods=20).mean()
+    growth_ratio = _strong_ratio(GROWTH_INDEX_CODE, close, components)
+    value_ratio = _strong_ratio(VALUE_INDEX_CODE, close, components)
+    diff = growth_ratio - value_ratio
+    signal = _signal_from_diff(diff.dropna())
+    return signal.reindex(data_index)
 
-    component_dates = {
-        index_code: pd.DatetimeIndex(sorted(by_date.keys()))
-        for index_code, by_date in components.items()
-    }
-    result = pd.Series(np.nan, index=data_index, dtype="float64")
-    for dt in data_index:
-        if dt not in strong.index:
-            continue
-        row = strong.loc[dt]
-        ratios = {}
-        for style_key in [GROWTH_STYLE_KEY, VALUE_STYLE_KEY]:
-            dates = component_dates[style_key]
-            loc = dates.searchsorted(dt, side="right") - 1
-            if loc < 0:
-                continue
-            tickers = [ticker for ticker in components[style_key][dates[loc]] if ticker in strong.columns]
-            if tickers:
-                ratios[style_key] = row[tickers].mean(skipna=True)
-        if GROWTH_STYLE_KEY in ratios and VALUE_STYLE_KEY in ratios:
-            result.at[dt] = ratios[GROWTH_STYLE_KEY] - ratios[VALUE_STYLE_KEY]
-    return result
+
+def _index_momentum_signal(window: int = 20) -> pd.Series:
+    growth = _load_index_close(GROWTH_INDEX_CODE).dropna().sort_index()
+    value = _load_index_close(VALUE_INDEX_CODE).dropna().sort_index()
+    growth_ret = growth.pct_change(window, fill_method=None)
+    value_ret = value.pct_change(window, fill_method=None)
+    diff = (growth_ret - value_ret).dropna()
+    return _signal_from_diff(diff)
 
 
 def _direction_score(series: pd.Series, bar: float) -> pd.Series:
@@ -184,13 +200,10 @@ def generate_paper_odds_win_style_rotation_factor_source_frame(data_df: pd.DataF
     p001_monthly = cpi_ppi.rolling(3, min_periods=3).mean() - cpi_ppi.rolling(12, min_periods=12).mean()
     _register_factor(raw_factor_df, factor_source_df, "P001_raw", p001_monthly)
 
-    v001 = _strong_ratio_diff(data_index)
+    v001 = _constituent_momentum_signal(data_index)
     _register_factor(raw_factor_df, factor_source_df, "V001_raw", v001)
 
-    adjusted_close = _load_adjusted_close()
-    growth_close = _load_weighted_style_close("growth_factor_Fri.parquet", adjusted_close)
-    value_close = _load_weighted_style_close("value_factor_Fri.parquet", adjusted_close)
-    v002 = growth_close.pct_change(20, fill_method=None) - value_close.pct_change(20, fill_method=None)
+    v002 = _index_momentum_signal(window=20)
     _register_factor(raw_factor_df, factor_source_df, "V002_raw", v002)
 
     score_df = pd.concat(

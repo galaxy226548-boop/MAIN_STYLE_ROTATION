@@ -660,7 +660,6 @@ def load_factor_metadata(factor_cols: list[str]) -> tuple[dict[str, dict[str, ob
 
     metadata: dict[str, dict[str, object]] = {}
     missing_bar_defaults: list[dict[str, object]] = []
-
     for factor_col in factor_cols:
         matches = by_code.get(factor_col, [])
         if not matches:
@@ -787,15 +786,16 @@ def save_generated_factor_records(
 
     generated_at = datetime.now(timezone.utc).isoformat()
 
-    def record_key(record: dict[str, object]) -> tuple[str, str, str, str]:
+    def record_key(record: dict[str, object]) -> tuple[str, str, str, str, str]:
         source_file = str(record.get("_source_file") or "")
         source_sheet = str(record.get("_source_sheet") or record.get("_sheet") or "")
+        output_prefix_key = str(record.get("_generated_output_prefix") or "")
         factor_id = record.get("factor_id")
         if factor_id is not None:
-            return source_file, source_sheet, "factor_id", str(factor_id)
-        return source_file, source_sheet, "code", str(record.get("code") or "")
+            return source_file, source_sheet, output_prefix_key, "factor_id", str(factor_id)
+        return source_file, source_sheet, output_prefix_key, "code", str(record.get("code") or "")
 
-    merged: dict[tuple[str, str, str, str], dict[str, object]] = {}
+    merged: dict[tuple[str, str, str, str, str], dict[str, object]] = {}
     for record in existing_records:
         if isinstance(record, dict):
             merged[record_key(record)] = dict(record)
@@ -818,6 +818,17 @@ def load_record_all_factor_metadata(
     paper_id: str,
     factor_cols: list[str],
 ) -> tuple[dict[str, dict[str, object]], list[dict[str, object]]]:
+    metadata, missing_bar_defaults, _selected_records = load_record_all_factor_metadata_with_records(
+        paper_id,
+        factor_cols,
+    )
+    return metadata, missing_bar_defaults
+
+
+def load_record_all_factor_metadata_with_records(
+    paper_id: str,
+    factor_cols: list[str],
+) -> tuple[dict[str, dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
     if not record_all_path.exists():
         raise FileNotFoundError(f"找不到 record_all.json：{record_all_path}")
 
@@ -836,6 +847,7 @@ def load_record_all_factor_metadata(
 
     metadata: dict[str, dict[str, object]] = {}
     missing_bar_defaults: list[dict[str, object]] = []
+    selected_records: list[dict[str, object]] = []
 
     for factor_col in factor_cols:
         matches = by_factor_id.get(factor_col, [])
@@ -865,8 +877,9 @@ def load_record_all_factor_metadata(
             "factor": record.get("factor"),
             "progress": record.get("progress"),
         }
+        selected_records.append(dict(record))
 
-    return metadata, missing_bar_defaults
+    return metadata, missing_bar_defaults, selected_records
 
 
 def mount_factor_source_frame(

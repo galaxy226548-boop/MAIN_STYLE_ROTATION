@@ -17,9 +17,10 @@ from factor_utils import (
     build_threshold_signal_ls_df,
     load_benchmark_index,
     load_default_data,
-    load_record_all_factor_metadata,
+    load_record_all_factor_metadata_with_records,
     mount_factor_source_frame,
     save_factor_outputs,
+    save_generated_factor_records,
     validate_prepared_mapping,
 )
 from paper_odds_win_style_rotation import (
@@ -60,7 +61,10 @@ def main() -> None:
     benchmark_index = load_benchmark_index()
 
     factor_source_df = generate_factor_source_frame(data_df)
-    factor_metadata, missing_bar_defaults = load_record_all_factor_metadata(PAPER_ID, list(factor_source_df.columns))
+    factor_metadata, missing_bar_defaults, selected_records = load_record_all_factor_metadata_with_records(
+        PAPER_ID,
+        list(factor_source_df.columns),
+    )
     mounted_normalized_factor_df = mount_factor_source_frame(
         factor_source_df=factor_source_df,
         market_df=market_df,
@@ -78,6 +82,8 @@ def main() -> None:
 
     for label, path in output_paths.items():
         print(f"{label} saved to:", path)
+    generated_path = save_generated_factor_records(selected_records, PAPER_ID)
+    print("generated records saved to:", generated_path)
     _print_factor_output_summary(PAPER_ID, mounted_normalized_factor_df, signal_ls_df)
 
 

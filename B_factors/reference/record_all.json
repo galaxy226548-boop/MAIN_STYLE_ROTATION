@@ -2532,7 +2532,7 @@
       ]
     },
     "sheet1_indicators": {
-      "row_count": 460,
+      "row_count": 464,
       "columns": [
         "paper_id",
         "factor",
@@ -9816,35 +9816,35 @@
         },
         {
           "paper_id": "如何从赔率和胜率看成长价值轮动——市场风格轮动系列",
-          "factor": "强势股占比差",
-          "code": "F007",
+          "factor": "指数成分股强势占比差",
+          "code": "F007_INDEX_COMPONENT_STRONG",
           "factor_id": "V001",
           "availability": 0,
           "signal_type": "state",
           "source_type": "equity_price",
-          "calc_method": "成长风格5日均线大于20日均线的个股占比 -\n价值风格5日均线大于20日均线的个股占比",
-          "signal_rule": ">0 => growth; <0 => value",
-          "condition": "growth_strong_ratio = mean(MA5 > MA20 in growth_pool); value_strong_ratio = mean(MA5 > MA20 in value_pool); growth_strong_ratio - value_strong_ratio",
-          "docu": "A_data/prepared_data/growth_factor_Fri.parquet, A_data/prepared_data/value_factor_Fri.parquet, A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
-          "data_field": "growth/value_factor_Fri: holding_date/component; S_DQ_ADJCLOSE: TRADE_DT, adjusted close columns by ticker",
+          "calc_method": "分别计算成长与价值指数成分股中 MA5 > MA20 的股票数量占比，并取成长占比减价值占比。",
+          "signal_rule": ">0 => growth; <0 => value; =0 => neutral",
+          "condition": "mean(MA5 > MA20 for 399370.SZ components) - mean(MA5 > MA20 for 399371.SZ components)",
+          "docu": "A_data/prepared_data/AIndexHS300FreeWeight.parquet, A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+          "data_field": "AIndexHS300FreeWeight: S_INFO_WINDCODE, S_CON_WINDCODE, TRADE_DT; S_DQ_ADJCLOSE: TRADE_DT and adjusted close columns by ticker",
           "bar": "0",
-          "notes": "使用growth_factor_Fri/value_factor_Fri的holding_date成分股池，个股日收盘价来自S_DQ_ADJCLOSE后复权收盘价"
+          "notes": "复刻 SY_Reference/成长价值风格轮动-老师参考.py 中 _strong_ratio/get_constituent_mom_signals 逻辑；每日使用不晚于当前日期的最新指数成分股。"
         },
         {
           "paper_id": "如何从赔率和胜率看成长价值轮动——市场风格轮动系列",
-          "factor": "动量",
-          "code": "F006",
+          "factor": "指数20日动量差",
+          "code": "F006_INDEX_CLOSE",
           "factor_id": "V002",
-          "availability": null,
+          "availability": 0,
           "signal_type": "state",
-          "source_type": "equity_price",
-          "calc_method": "近20个holding_date成长风格加权后复权收盘价普通收益率-价值风格加权后复权收盘价普通收益率",
-          "signal_rule": ">0 => growth; <0 => value",
-          "condition": "weighted_adj_close(growth_factor_Fri, holding_date).pct_change(20) - weighted_adj_close(value_factor_Fri, holding_date).pct_change(20)",
-          "docu": "A_data/prepared_data/growth_factor_Fri.parquet, A_data/prepared_data/value_factor_Fri.parquet, A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
-          "data_field": "growth/value_factor_Fri: holding_date/component/weight; S_DQ_ADJCLOSE: TRADE_DT, adjusted close columns by ticker",
+          "source_type": "equity_index_price",
+          "calc_method": "使用国证成长指数与国证价值指数收盘价，计算近20个交易日普通收益率差。",
+          "signal_rule": ">0 => growth; <0 => value; =0 => neutral",
+          "condition": "399370.SZ_close.pct_change(20) - 399371.SZ_close.pct_change(20)",
+          "docu": "A_data/prepared_data/AIndexEODPrices.parquet",
+          "data_field": "S_INFO_WINDCODE in [399370.SZ/399370, 399371.SZ/399371]; TRADE_DT; S_DQ_CLOSE",
           "bar": "0",
-          "notes": "每日风格价格按有效价格股票的sum(S_DQ_ADJCLOSE * weight) / sum(weight)计算；缺失价格剔除后重归一权重，全缺失日期保持NaN"
+          "notes": "复刻 SY_Reference/成长价值风格轮动-老师参考.py 中 get_mom_signals 的动量_信号逻辑；成长=399370.SZ，价值=399371.SZ。"
         },
         {
           "paper_id": "如何从赔率和胜率看成长价值轮动——市场风格轮动系列",
@@ -11083,7 +11083,7 @@
           "signal_rule": ">0 => growth style worth investing",
           "condition": "growth_expectation = growth_win_rate * growth_odds - (1 - growth_win_rate)",
           "bar": "0",
-          "notes": "growth_odds来自LOWESS条件赔率估计，不是原始收益率。" ,
+          "notes": "growth_odds来自LOWESS条件赔率估计，不是原始收益率。",
           "evidence": "202302招商证券"
         },
         {
