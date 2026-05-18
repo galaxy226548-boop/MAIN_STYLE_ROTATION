@@ -28,6 +28,8 @@ try:
         calc_information_ratio,
         calc_monthly_win_rate,
         calc_payoff_ratio,
+        calc_period_win_rate,
+        calc_expectancy,
         calc_calmar_ratio,
         calc_market_regime_win_rate,
     )
@@ -40,6 +42,8 @@ except Exception:  # pragma: no cover - local script fallback
         calc_information_ratio,
         calc_monthly_win_rate,
         calc_payoff_ratio,
+        calc_period_win_rate,
+        calc_expectancy,
         calc_calmar_ratio,
         calc_market_regime_win_rate,
     )
@@ -179,6 +183,14 @@ def build_track_summary_table(
             weekly_ret_series=strategy_sub_df["period_ret_long_net"]
         )
 
+        period_win_rate = calc_period_win_rate(
+            period_ret_series=strategy_sub_df["period_ret_long_net"]
+        )
+
+        expectancy = calc_expectancy(
+            period_ret_series=strategy_sub_df["period_ret_long_net"]
+        )
+
         calmar_ratio = calc_calmar_ratio(
             annualized_return=ann_ret_long_abs,
             max_drawdown=max_dd_abs
@@ -207,6 +219,8 @@ def build_track_summary_table(
             "information_ratio": information_ratio,
             "monthly_win_rate": monthly_win_rate,
             "payoff_ratio": payoff_ratio,
+            "period_win_rate": period_win_rate,
+            "expectancy": expectancy,
             "calmar_ratio": calmar_ratio,
             "turnover_2way_pct": turnover_2way_pct,
             "growth_regime_win_rate": growth_regime_win_rate,
@@ -284,6 +298,8 @@ def build_track_summary_table(
             "information_ratio",
             "monthly_win_rate",
             "payoff_ratio",
+            "period_win_rate",
+            "expectancy",
             "calmar_ratio",
             "turnover_2way_pct",
             "growth_regime_win_rate",

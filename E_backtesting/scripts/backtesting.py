@@ -512,8 +512,9 @@ def build_screening_outputs(
                 "超额年化收益或绝对年化收益 > 0",
                 "超额夏普 > 0",
                 "成长/价值波段胜率均 > 50%",
-                "月度胜率 > 55%",
+                "Period胜率 > 52%",
                 "盈亏比 > 1",
+                "期望收益 > 0",
             ],
             "is_pass": [
                 last_row["trade_count"] > 15,
@@ -521,8 +522,9 @@ def build_screening_outputs(
                 last_row["sharpe_excess"] > 0,
                 (last_row["growth_regime_win_rate"] > 0.5)
                 and (last_row["value_regime_win_rate"] > 0.5),
-                last_row["monthly_win_rate"] > 0.55,
+                last_row["period_win_rate"] > 0.52,
                 last_row["payoff_ratio"] > 1,
+                last_row["expectancy"] > 0,
             ],
         }
     )
@@ -531,13 +533,24 @@ def build_screening_outputs(
     result_monthly_win_rate = float(
         all_track_summary_df.xs(result_period_label, level="period")["monthly_win_rate"].mean()
     )
+    result_period_win_rate = float(last_row["period_win_rate"])
+    result_payoff_ratio = float(last_row["payoff_ratio"])
+    result_expectancy = float(last_row["expectancy"])
     monthly_win_rate_tag = (
         "MWnan"
         if pd.isna(result_monthly_win_rate)
         else f"mw{result_monthly_win_rate * 100:.2f}"
     )
     result_prefix = f"{pass_count}_{monthly_win_rate_tag}_{factor_col}"
-    return screen_result_df, pass_count, result_monthly_win_rate, result_prefix
+    return (
+        screen_result_df,
+        pass_count,
+        result_monthly_win_rate,
+        result_period_win_rate,
+        result_payoff_ratio,
+        result_expectancy,
+        result_prefix,
+    )
 
 
 def save_summary_excel(
@@ -545,6 +558,9 @@ def save_summary_excel(
     screen_result_df: pd.DataFrame,
     pass_count: int,
     result_monthly_win_rate: float,
+    result_period_win_rate: float,
+    result_payoff_ratio: float,
+    result_expectancy: float,
     track_summary_dict: dict[int, pd.DataFrame],
     avg_summary_df: pd.DataFrame,
     std_summary_df: pd.DataFrame,
@@ -555,8 +571,20 @@ def save_summary_excel(
         screen_result_df.to_excel(writer, sheet_name="screening", startrow=0, startcol=0, index=False)
         pass_count_df = pd.DataFrame(
             {
-                "condition": ["pass_count", "monthly_win_rate"],
-                "is_pass": [pass_count, result_monthly_win_rate],
+                "condition": [
+                    "pass_count",
+                    "monthly_win_rate",
+                    "period_win_rate",
+                    "payoff_ratio",
+                    "expectancy",
+                ],
+                "is_pass": [
+                    pass_count,
+                    result_monthly_win_rate,
+                    result_period_win_rate,
+                    result_payoff_ratio,
+                    result_expectancy,
+                ],
             }
         )
         pass_count_df.to_excel(
@@ -805,7 +833,15 @@ def main() -> None:
         rf=rf,
     )
 
-    screen_result_df, pass_count, result_monthly_win_rate, result_prefix = build_screening_outputs(
+    (
+        screen_result_df,
+        pass_count,
+        result_monthly_win_rate,
+        result_period_win_rate,
+        result_payoff_ratio,
+        result_expectancy,
+        result_prefix,
+    ) = build_screening_outputs(
         avg_summary_df=avg_summary_df,
         all_track_summary_df=all_track_summary_df,
         factor_col=factor_col,
@@ -819,6 +855,9 @@ def main() -> None:
         screen_result_df=screen_result_df,
         pass_count=pass_count,
         result_monthly_win_rate=result_monthly_win_rate,
+        result_period_win_rate=result_period_win_rate,
+        result_payoff_ratio=result_payoff_ratio,
+        result_expectancy=result_expectancy,
         track_summary_dict=track_summary_dict,
         avg_summary_df=avg_summary_df,
         std_summary_df=std_summary_df,
@@ -869,6 +908,9 @@ def main() -> None:
     print(f"charge_initial_trade: {charge_initial_trade}")
     print(f"pass_count: {pass_count}")
     print(f"monthly_win_rate: {result_monthly_win_rate:.6f}")
+    print(f"period_win_rate: {result_period_win_rate:.6f}")
+    print(f"payoff_ratio: {result_payoff_ratio:.6f}")
+    print(f"expectancy: {result_expectancy:.6f}")
     print(f"outputs saved to: {output_dir}")
 
 

@@ -224,6 +224,46 @@ def calc_payoff_ratio(weekly_ret_series):
     payoff_ratio = positive_ret.mean() / abs(negative_ret.mean())
     return payoff_ratio
 
+def calc_period_win_rate(period_ret_series):
+    """
+    计算 period 口径胜率（事件胜率）。
+
+    样本：每次调仓持有区间的净收益（period_ret_long_net）
+    与 calc_payoff_ratio、calc_expectancy 同源，构成内部自洽的
+    三个事件口径质量指标。
+
+    返回：period_ret > 0 的样本占比
+    """
+    period_ret_series = period_ret_series.dropna()
+
+    if len(period_ret_series) == 0:
+        return np.nan
+
+    return (period_ret_series > 0).mean()
+
+def calc_expectancy(period_ret_series):
+    """
+    计算单次调仓投资期望。
+
+    公式：expectancy = win_rate * avg_positive + (1 - win_rate) * avg_negative
+    其中 avg_negative 保留负号。
+
+    与 calc_period_win_rate、calc_payoff_ratio 同源。
+    """
+    period_ret_series = period_ret_series.dropna()
+
+    if len(period_ret_series) == 0:
+        return np.nan
+
+    positive_ret = period_ret_series[period_ret_series > 0]
+    negative_ret = period_ret_series[period_ret_series < 0]
+
+    win_rate = len(positive_ret) / len(period_ret_series)
+    avg_positive = positive_ret.mean() if len(positive_ret) > 0 else 0.0
+    avg_negative = negative_ret.mean() if len(negative_ret) > 0 else 0.0
+
+    return win_rate * avg_positive + (1 - win_rate) * avg_negative
+
 def calc_calmar_ratio(annualized_return, max_drawdown):
     """
     计算卡玛比率。

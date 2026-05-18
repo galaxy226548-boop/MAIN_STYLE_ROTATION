@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import warnings
+import re
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timezone
@@ -75,6 +76,14 @@ PREPARED_SERIES_MAP = {
 
 _PREPARED_TABLE_CACHE: dict[str, pd.DataFrame] = {}
 _DATA_INVENTORY_CACHE: dict[str, object] | None = None
+
+# Macro calendar revision handling:
+# - "warn": keep the row's current value and report current/next-prev mismatches.
+# - "use_next_prev": when adjacent periods disagree, replace the previous period's
+#   current value with the next row's previous value, i.e. the value visible before
+#   later revisions.
+MACRO_REVISION_POLICY_WARN = "warn"
+MACRO_REVISION_POLICY_USE_NEXT_PREV = "use_next_prev"
 
 
 def load_default_data() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -406,15 +415,72 @@ def _macro_monthly_fallback_series(keyword: str, value_col: str = "今值") -> p
     return read_prepared_series("macro_monthly.parquet", candidates[0])
 
 
+def _macro_indicator_period(indicator: object) -> tuple[str, int] | None:
+    text = str(indicator or "")
+    quarter_map = {
+        "第一季度": 1,
+        "第二季度": 2,
+        "第三季度": 3,
+        "第四季度": 4,
+    }
+    for quarter_text, quarter_number in quarter_map.items():
+        if quarter_text in text:
+            return "Q", quarter_number
+
+    month_match = re.match(r"(\d{1,2})月", text)
+    if month_match:
+        month_number = int(month_match.group(1))
+        if 1 <= month_number <= 12:
+            return "M", month_number
+    return None
+
+
+def _missing_period_count(previous_indicator: object, next_indicator: object) -> int | None:
+    previous_period = _macro_indicator_period(previous_indicator)
+    next_period = _macro_indicator_period(next_indicator)
+    if previous_period is None or next_period is None:
+        return None
+    previous_kind, previous_number = previous_period
+    next_kind, next_number = next_period
+    if previous_kind != next_kind:
+        return None
+    period_count = 12 if previous_kind == "M" else 4
+    step = (next_number - previous_number) % period_count
+    if step == 0:
+        return None
+    return step - 1
+
+
+def _previous_period_label(indicator: object) -> str:
+    period = _macro_indicator_period(indicator)
+    if period is None:
+        return "inferred missing period"
+    kind, number = period
+    if kind == "M":
+        previous_number = 12 if number == 1 else number - 1
+        return f"inferred {previous_number}月 from next previous value"
+    previous_number = 4 if number == 1 else number - 1
+    return f"inferred Q{previous_number} from next previous value"
+
+
 def _fill_missing_current_from_next_prev(
     out: pd.DataFrame,
     date_col: str,
+    indicator_col: str | None,
     value_col: str,
     keyword: str,
     current_values: pd.Series,
     prev_values: pd.Series | None,
     duplicate_message_prefix: str,
+    infer_missing_actual_from_next_prev: bool = False,
+    revision_policy: str = MACRO_REVISION_POLICY_WARN,
 ) -> pd.Series:
+    if revision_policy not in {MACRO_REVISION_POLICY_WARN, MACRO_REVISION_POLICY_USE_NEXT_PREV}:
+        raise ValueError(
+            "revision_policy must be one of "
+            f"{MACRO_REVISION_POLICY_WARN!r}, {MACRO_REVISION_POLICY_USE_NEXT_PREV!r}; got {revision_policy!r}"
+        )
+
     work = pd.DataFrame(
         {
             "date": pd.to_datetime(out[date_col], errors="coerce").to_numpy(),
@@ -425,6 +491,10 @@ def _fill_missing_current_from_next_prev(
         work["prev"] = pd.Series(prev_values, index=out.index).to_numpy(dtype="float64")
     else:
         work["prev"] = np.nan
+    if indicator_col is not None and indicator_col in out.columns:
+        work["indicator"] = out[indicator_col].astype(str).to_numpy()
+    else:
+        work["indicator"] = ""
 
     work = work[work["date"].notna()].copy()
     dup_count = int(work["date"].duplicated(keep=False).sum())
@@ -437,18 +507,78 @@ def _fill_missing_current_from_next_prev(
         return pd.Series(work["actual"].to_numpy(), index=work["date"], name=keyword).sort_index()
 
     actual = pd.Series(work["actual"].to_numpy(), index=work["date"], name=keyword)
+    indicator = pd.Series(work["indicator"].to_numpy(), index=work["date"])
     next_prev = pd.Series(work["prev"].to_numpy(), index=work["date"]).shift(-1)
     next_date = pd.Series(work["date"].shift(-1).to_numpy(), index=work["date"])
+    next_indicator = indicator.shift(-1)
 
     comparable = actual.notna() & next_prev.notna()
     mismatch = comparable & ~np.isclose(actual, next_prev, rtol=1e-9, atol=1e-12)
-    if mismatch.any():
+    inferred_rows: list[dict[str, object]] = []
+    inferred_dates: set[pd.Timestamp] = set()
+    revision_adjusted_dates: set[pd.Timestamp] = set()
+    wider_gap_inferred_count = 0
+
+    for dt in actual.index[mismatch]:
+        missing_periods = _missing_period_count(indicator.loc[dt], next_indicator.loc[dt])
+        if infer_missing_actual_from_next_prev and missing_periods is not None and missing_periods >= 1 and pd.notna(next_date.loc[dt]):
+            inferred_date = pd.Timestamp(next_date.loc[dt]) - pd.Timedelta(nanoseconds=1)
+            inferred_rows.append(
+                {
+                    "date": inferred_date,
+                    "actual": float(next_prev.loc[dt]),
+                    "indicator": _previous_period_label(next_indicator.loc[dt]),
+                }
+            )
+            inferred_dates.add(dt)
+            if missing_periods > 1:
+                wider_gap_inferred_count += 1
+            continue
+        if revision_policy == MACRO_REVISION_POLICY_USE_NEXT_PREV and missing_periods == 0:
+            actual.loc[dt] = next_prev.loc[dt]
+            revision_adjusted_dates.add(dt)
+
+    unresolved_mismatch = mismatch.copy()
+    if inferred_dates:
+        unresolved_mismatch.loc[list(inferred_dates)] = False
+    if revision_adjusted_dates:
+        unresolved_mismatch.loc[list(revision_adjusted_dates)] = False
+
+    if inferred_rows:
+        inferred = pd.DataFrame(inferred_rows)
+        inferred_actual = pd.Series(
+            inferred["actual"].to_numpy(dtype="float64"),
+            index=pd.to_datetime(inferred["date"]),
+            name=keyword,
+        )
+        actual = pd.concat([actual, inferred_actual]).sort_index()
+        actual = actual[~actual.index.duplicated(keep="last")]
+        print(
+            f"{duplicate_message_prefix} keyword {keyword!r} inferred {len(inferred_rows)} missing actual values "
+            "from the next row's previous value; inferred forecast values remain unavailable."
+        )
+        if wider_gap_inferred_count:
+            print(
+                f"{duplicate_message_prefix} keyword {keyword!r} had {wider_gap_inferred_count} wider missing-period gaps; "
+                "only the period immediately before the next row can be inferred from next-prev."
+            )
+
+    if revision_adjusted_dates:
+        print(
+            f"{duplicate_message_prefix} keyword {keyword!r} replaced {len(revision_adjusted_dates)} adjacent-period "
+            "current values with next-row previous values under revision_policy='use_next_prev'."
+        )
+
+    if unresolved_mismatch.any():
+        unresolved_dates = unresolved_mismatch.index[unresolved_mismatch]
         rows = pd.DataFrame(
             {
-                "date": actual.index[mismatch],
-                "actual": actual.loc[mismatch].to_numpy(),
-                "next_date": next_date.loc[mismatch].to_numpy(),
-                "next_prev": next_prev.loc[mismatch].to_numpy(),
+                "date": unresolved_dates,
+                "indicator": indicator.loc[unresolved_dates].to_numpy(),
+                "actual": actual.loc[unresolved_dates].to_numpy(),
+                "next_date": next_date.loc[unresolved_dates].to_numpy(),
+                "next_indicator": next_indicator.loc[unresolved_dates].to_numpy(),
+                "next_prev": next_prev.loc[unresolved_dates].to_numpy(),
             }
         )
         warnings.warn(
@@ -458,6 +588,7 @@ def _fill_missing_current_from_next_prev(
             stacklevel=2,
         )
 
+    next_prev = next_prev.reindex(actual.index)
     fill_mask = actual.isna() & next_prev.notna()
     if fill_mask.any():
         actual.loc[fill_mask] = next_prev.loc[fill_mask]
@@ -475,7 +606,14 @@ def _fill_missing_current_from_next_prev(
     return actual.sort_index()
 
 
-def _load_china_macro_series(keyword, value_col="今值", required_contains=None, exclude_contains=None):
+def _load_china_macro_series(
+    keyword,
+    value_col="今值",
+    required_contains=None,
+    exclude_contains=None,
+    infer_missing_actual_from_next_prev: bool = False,
+    revision_policy: str = MACRO_REVISION_POLICY_WARN,
+):
     macro = _load_macro_all()
     date_col = "日期" if "日期" in macro.columns else macro.columns[2]
     nation_col = "国家/地区" if "国家/地区" in macro.columns else macro.columns[4]
@@ -506,16 +644,24 @@ def _load_china_macro_series(keyword, value_col="今值", required_contains=None
     s = _fill_missing_current_from_next_prev(
         out,
         date_col=date_col,
+        indicator_col=indicator_col,
         value_col=value_col,
         keyword=keyword,
         current_values=current_values,
         prev_values=prev_values,
         duplicate_message_prefix="Macro",
+        infer_missing_actual_from_next_prev=infer_missing_actual_from_next_prev,
+        revision_policy=revision_policy,
     )
     return s.sort_index()
 
 
-def _load_china_macro_level_series(keyword: str, value_col: str = "今值") -> pd.Series:
+def _load_china_macro_level_series(
+    keyword: str,
+    value_col: str = "今值",
+    infer_missing_actual_from_next_prev: bool = False,
+    revision_policy: str = MACRO_REVISION_POLICY_WARN,
+) -> pd.Series:
     """Load China macro calendar values as raw levels, without percent-style /100 scaling.
 
     Use this for level/diffusion-index indicators such as PMI. Some macro indicator names
@@ -539,11 +685,14 @@ def _load_china_macro_level_series(keyword: str, value_col: str = "今值") -> p
     s = _fill_missing_current_from_next_prev(
         out,
         date_col=date_col,
+        indicator_col=indicator_col,
         value_col=value_col,
         keyword=keyword,
         current_values=current_values,
         prev_values=prev_values,
         duplicate_message_prefix="Macro level",
+        infer_missing_actual_from_next_prev=infer_missing_actual_from_next_prev,
+        revision_policy=revision_policy,
     )
     return s.sort_index()
 

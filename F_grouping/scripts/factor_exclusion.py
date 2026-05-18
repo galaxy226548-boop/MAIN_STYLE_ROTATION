@@ -29,8 +29,17 @@ IC_FACTOR_COL = "factor_id"
 BACKTESTING_FACTOR_COL = "factor_name"
 IC_SCORE_COL = "总分"
 BACKTESTING_PASS_COL = "pass_sum"
+PERIOD_WIN_RATE_COL = "period_win_rate"
+PAYOFF_RATIO_COL = "payoff_ratio"
+EXPECTANCY_COL = "expectancy"
 MONTHLY_WIN_RATE_COL = "monthly_win_rate"
 TOTAL_SCORE_COL = "total_score"
+PERCENTAGE_FORMAT_COLS = [
+    MONTHLY_WIN_RATE_COL,
+    PERIOD_WIN_RATE_COL,
+    PAYOFF_RATIO_COL,
+    EXPECTANCY_COL,
+]
 
 IC_SCORE_THRESHOLD = 1.5
 BACKTESTING_PASS_THRESHOLD = 3
@@ -49,7 +58,7 @@ def build_usable_factors(ic_score_path: Path, backtesting_score_path: Path) -> p
     require_columns(ic_score_df, [IC_FACTOR_COL, IC_SCORE_COL], ic_score_path)
     require_columns(
         backtesting_score_df,
-        [BACKTESTING_FACTOR_COL, BACKTESTING_PASS_COL],
+        [BACKTESTING_FACTOR_COL, BACKTESTING_PASS_COL, PERIOD_WIN_RATE_COL, PAYOFF_RATIO_COL, EXPECTANCY_COL],
         backtesting_score_path,
     )
 
@@ -64,10 +73,21 @@ def build_usable_factors(ic_score_path: Path, backtesting_score_path: Path) -> p
 
     ic_score = pd.to_numeric(merged_df[IC_SCORE_COL], errors="coerce")
     pass_sum = pd.to_numeric(merged_df[BACKTESTING_PASS_COL], errors="coerce")
-    merged_df[TOTAL_SCORE_COL] = ic_score.add(pass_sum, fill_value=0)
-    exclusion_mask = (ic_score < IC_SCORE_THRESHOLD) & (pass_sum < BACKTESTING_PASS_THRESHOLD)
+    expectancy = pd.to_numeric(merged_df[EXPECTANCY_COL], errors="coerce")
+    period_win_rate_pass = pd.to_numeric(merged_df[PERIOD_WIN_RATE_COL], errors="coerce").gt(0.52).astype(int)
+    payoff_ratio_pass = pd.to_numeric(merged_df[PAYOFF_RATIO_COL], errors="coerce").gt(1).astype(int)
+    # 当 expectancy <= 0 时，将 period_win_rate 和 payoff_ratio 对 pass_sum 的贡献从 total_score 中扣除
+    penalty = (period_win_rate_pass + payoff_ratio_pass) * expectancy.le(0).fillna(False).astype(int)
+    merged_df[TOTAL_SCORE_COL] = ic_score.add(pass_sum, fill_value=0) - penalty
+    missing_backtesting_mask = pass_sum.isna()
+    weak_score_mask = (ic_score < IC_SCORE_THRESHOLD) & (pass_sum < BACKTESTING_PASS_THRESHOLD)
+    exclusion_mask = missing_backtesting_mask | weak_score_mask
 
-    output_df = merged_df.loc[~exclusion_mask].reset_index(drop=True)
+    output_df = (
+        merged_df.loc[~exclusion_mask]
+        .sort_values([TOTAL_SCORE_COL, EXPECTANCY_COL, IC_FACTOR_COL], ascending=[False, False, True], kind="mergesort")
+        .reset_index(drop=True)
+    )
     if MONTHLY_WIN_RATE_COL in output_df.columns:
         columns = [column for column in output_df.columns if column != TOTAL_SCORE_COL]
         insert_at = columns.index(MONTHLY_WIN_RATE_COL)
@@ -79,7 +99,15 @@ def build_usable_factors(ic_score_path: Path, backtesting_score_path: Path) -> p
 
 def write_output(df: pd.DataFrame, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_excel(output_path, index=False)
+    with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False)
+        workbook = writer.book
+        worksheet = writer.sheets["Sheet1"]
+        percentage_format = workbook.add_format({"num_format": "0.00%"})
+        for column_name in PERCENTAGE_FORMAT_COLS:
+            if column_name in df.columns:
+                column_index = df.columns.get_loc(column_name)
+                worksheet.set_column(column_index, column_index, None, percentage_format)
 
 
 def main() -> None:

@@ -28,8 +28,11 @@ INPUT_FILE_PATTERN = "*rebalance_50_summary.xlsx"
 SUMMARY_SUFFIX = "_rebalance_50_summary.xlsx"
 FACTOR_NAME_PATTERN = re.compile(r"mw\d+(?:\.\d+)?_(.+)_rebalance_50_summary\.xlsx$")
 SCREENING_SHEET = "screening"
-SCREENING_ROW_COUNT = 6
+SCREENING_ROW_COUNT = 7
 MONTHLY_WIN_RATE_LABEL = "monthly_win_rate"
+PERIOD_WIN_RATE_LABEL = "period_win_rate"
+PAYOFF_RATIO_LABEL = "payoff_ratio"
+EXPECTANCY_LABEL = "expectancy"
 
 
 def parse_factor_name(path: Path) -> str:
@@ -68,10 +71,26 @@ def read_summary_file(path: Path) -> dict[str, object]:
     row["pass_sum"] = int(sum(bool(row[condition]) for condition in condition_columns))
 
     condition_series = df[condition_col].astype(str).str.strip()
+
     monthly_rows = df.loc[condition_series == MONTHLY_WIN_RATE_LABEL, value_col]
     if monthly_rows.empty:
         raise ValueError(f"Missing {MONTHLY_WIN_RATE_LABEL!r}: {path}")
     row["monthly_win_rate"] = pd.to_numeric(monthly_rows.iloc[-1], errors="coerce")
+
+    period_win_rate_rows = df.loc[condition_series == PERIOD_WIN_RATE_LABEL, value_col]
+    if period_win_rate_rows.empty:
+        raise ValueError(f"Missing {PERIOD_WIN_RATE_LABEL!r}: {path}")
+    row["period_win_rate"] = pd.to_numeric(period_win_rate_rows.iloc[-1], errors="coerce")
+
+    payoff_ratio_rows = df.loc[condition_series == PAYOFF_RATIO_LABEL, value_col]
+    if payoff_ratio_rows.empty:
+        raise ValueError(f"Missing {PAYOFF_RATIO_LABEL!r}: {path}")
+    row["payoff_ratio"] = pd.to_numeric(payoff_ratio_rows.iloc[-1], errors="coerce")
+
+    expectancy_rows = df.loc[condition_series == EXPECTANCY_LABEL, value_col]
+    if expectancy_rows.empty:
+        raise ValueError(f"Missing {EXPECTANCY_LABEL!r}: {path}")
+    row["expectancy"] = pd.to_numeric(expectancy_rows.iloc[-1], errors="coerce")
 
     return row
 
@@ -96,15 +115,24 @@ def collect_scores(input_dir: Path) -> tuple[pd.DataFrame, list[str], int]:
         raise FileNotFoundError(f"No readable summary files found under {input_dir}")
 
     result_df = pd.DataFrame(records)
+    _non_condition = {"factor_name", "pass_sum", "monthly_win_rate", "period_win_rate", "payoff_ratio", "expectancy"}
     condition_columns = [
         column
         for column in result_df.columns
-        if column not in {"factor_name", "pass_sum", "monthly_win_rate"}
+        if column not in _non_condition
     ]
-    output_columns = ["factor_name", *condition_columns, "pass_sum", "monthly_win_rate"]
+    output_columns = [
+        "factor_name",
+        *condition_columns,
+        "pass_sum",
+        "period_win_rate",
+        "payoff_ratio",
+        "expectancy",
+        "monthly_win_rate",
+    ]
     result_df = result_df.loc[:, output_columns]
     result_df = result_df.sort_values(
-        by=["pass_sum", "monthly_win_rate", "factor_name"],
+        by=["pass_sum", "expectancy", "factor_name"],
         ascending=[False, False, True],
         kind="mergesort",
     ).reset_index(drop=True)
