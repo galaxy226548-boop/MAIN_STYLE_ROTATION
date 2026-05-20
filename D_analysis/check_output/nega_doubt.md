@@ -111,3 +111,5 @@ W004_L_signal
 W004_V
 W004_V_signal
 W004_signal
+W005_binary
+W006_binary

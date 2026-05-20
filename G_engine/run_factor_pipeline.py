@@ -100,10 +100,24 @@ def read_parquet_header(path: Path) -> pd.DataFrame:
     return pd.read_parquet(path)
 
 
+def is_under_directory(path: Path, directory: Path) -> bool:
+    try:
+        path.resolve().relative_to(directory.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def is_grouping_input_pair(signal_path: Path, factor_path: Path) -> bool:
+    grouping_root = PROJECT_ROOT / "F_grouping"
+    return is_under_directory(signal_path, grouping_root) and is_under_directory(factor_path, grouping_root)
+
+
 def validate_inputs(
     signal_df: pd.DataFrame,
     factor_df: pd.DataFrame,
     requested_factors: list[str] | None,
+    grouping_pair: bool = False,
 ) -> list[str]:
     signal_cols = [str(col) for col in signal_df.columns]
     factor_cols = [str(col) for col in factor_df.columns]
@@ -123,6 +137,20 @@ def validate_inputs(
         if missing:
             raise KeyError(f"Requested factors are missing from inputs: {missing}")
         return requested_factors
+
+    if grouping_pair:
+        if not signal_cols:
+            raise ValueError("F_grouping signal parquet has no factor columns.")
+
+        final_factor = signal_cols[-1]
+        if final_factor not in factor_set:
+            raise KeyError(f"Final F_grouping signal factor is missing from factor parquet: {final_factor}")
+        if not final_factor.startswith("W"):
+            raise ValueError(
+                "F_grouping inputs default to the final combined W factor, "
+                f"but the final signal column is {final_factor!r}."
+            )
+        return [final_factor]
 
     return signal_cols
 
@@ -240,12 +268,15 @@ def main() -> None:
 
     signal_df = read_parquet_header(signal_path)
     factor_df = read_parquet_header(factor_path)
-    factors = validate_inputs(signal_df, factor_df, args.factor)
+    grouping_pair = is_grouping_input_pair(signal_path, factor_path)
+    factors = validate_inputs(signal_df, factor_df, args.factor, grouping_pair=grouping_pair)
 
     position_output_dir = POSITION_OUTPUT_ROOT / run_name
     backtest_output_root = BACKTEST_OUTPUT_ROOT / run_name
     ic_output_dir = IC_OUTPUT_ROOT / run_name
 
+    if grouping_pair and not args.factor:
+        print("F_grouping input pair detected; defaulting to final W factor only.")
     print(f"factors: {', '.join(factors)}")
     print(f"position output dir: {position_output_dir}")
     print(f"backtest output root: {backtest_output_root}")

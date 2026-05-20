@@ -24,20 +24,42 @@ from factor_utils import (
     validate_prepared_mapping,
 )
 from paper_odds_win_style_rotation import (
+    FACTOR_IDS as PAPER_FACTOR_IDS,
     PAPER_ID,
     generate_paper_odds_win_style_rotation_factor_source_frame,
 )
+from stockbondp2q import (
+    FACTOR_IDS as STOCKBONDP2Q_FACTOR_IDS,
+    generate_stockbondp2q_factors,
+    metadata_from_stockbondp2q_records,
+)
+from overseaFactors import (
+    FACTOR_IDS as OVERSEA_FACTOR_IDS,
+    generate_overseaFactors_factors,
+    metadata_from_overseaFactors_records,
+)
 
 
-def generate_factor_source_frame(data_df: pd.DataFrame) -> pd.DataFrame:
+def generate_factor_source_frame(data_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, object]]]:
+    try:
+        stockbondp2q_factor_source_df, stockbondp2q_records = generate_stockbondp2q_factors(data_df)
+    except ValueError as exc:
+        if "working_multiple_factors_plan.json missing implemented records" not in str(exc):
+            raise
+        print(f"Skipping stockbondp2q factors: {exc}")
+        stockbondp2q_factor_source_df = pd.DataFrame(index=pd.to_datetime(data_df.index))
+        stockbondp2q_records = []
+    overseaFactors_factor_source_df, overseaFactors_records = generate_overseaFactors_factors(data_df)
     factor_frames = [
         generate_paper_odds_win_style_rotation_factor_source_frame(data_df),
+        stockbondp2q_factor_source_df,
+        overseaFactors_factor_source_df,
     ]
-    factor_source_df = pd.concat(factor_frames, axis=1)
+    factor_source_df = pd.concat(factor_frames, axis=1, sort=False)
     duplicated_cols = factor_source_df.columns[factor_source_df.columns.duplicated()].tolist()
     if duplicated_cols:
         raise ValueError(f"factor source columns duplicated: {duplicated_cols}")
-    return factor_source_df
+    return factor_source_df, stockbondp2q_records + overseaFactors_records
 
 
 def _print_factor_output_summary(label: str, mounted_factor_df: pd.DataFrame, signal_ls_df: pd.DataFrame) -> None:
@@ -60,11 +82,20 @@ def main() -> None:
     data_df, market_df = load_default_data()
     benchmark_index = load_benchmark_index()
 
-    factor_source_df = generate_factor_source_frame(data_df)
+    factor_source_df, generated_records = generate_factor_source_frame(data_df)
     factor_metadata, missing_bar_defaults, selected_records = load_record_all_factor_metadata_with_records(
         PAPER_ID,
-        list(factor_source_df.columns),
+        PAPER_FACTOR_IDS,
     )
+    stockbondp2q_records = [
+        record for record in generated_records if str(record.get("factor_id") or "") in STOCKBONDP2Q_FACTOR_IDS
+    ]
+    overseaFactors_records = [
+        record for record in generated_records if str(record.get("factor_id") or "") in OVERSEA_FACTOR_IDS
+    ]
+    factor_metadata.update(metadata_from_stockbondp2q_records(stockbondp2q_records))
+    factor_metadata.update(metadata_from_overseaFactors_records(overseaFactors_records))
+    selected_records.extend(generated_records)
     mounted_normalized_factor_df = mount_factor_source_frame(
         factor_source_df=factor_source_df,
         market_df=market_df,

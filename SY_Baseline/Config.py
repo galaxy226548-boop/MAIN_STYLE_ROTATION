@@ -63,7 +63,7 @@ class Config:
     ALL_END = max(INS_END, OOS_END)
 
     # 7. 信号回测参数
-    TRANS_FEE = 2 / 1000            # 单边手续费
+    TRANS_FEE = 2/1000          # 单边手续费
     LOCK = True                     # True=锁仓；False=不锁仓
     CHARGE_INITIAL_TRADE = True     # 第一笔开仓是否收费
     RF = 0.015                      # 年化无风险利率

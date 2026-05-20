@@ -19,11 +19,12 @@ Output for factor group W004:
     F_grouping/output_COMB/W004_binary_factor_grouping_record.json
 
 Signal logic:
-    1. Equal-weight row-wise mean of all source signal_ls columns (no letter grouping).
-    2. Binarize: mean > 0 → 1.0, mean < 0 → -1.0, mean == 0 → carry forward
+    1. Optionally forward-fill each source signal_ls column before aggregation.
+    2. Equal-weight row-wise mean of all source signal_ls columns (no letter grouping).
+    3. Binarize: mean > 0 → 1.0, mean < 0 → -1.0, mean == 0 → carry forward
        the previous period's binary signal. NaN source rows remain NaN.
 
-mounted_normalized_factors columns: [source signals..., {binary_group}_mean]
+mounted_normalized_factors columns: [source signals..., {binary_group}]
 signal_ls columns:                  [source signals..., {binary_group}]
 """
 
@@ -51,6 +52,7 @@ INPUT_INVENTORY_PATH = REFERENCE_DIR / "input_comb_inventory.xlsx"
 
 INPUT_FILE_SUFFIX = "signal_ls.parquet"
 BINARY_SUFFIX = "_binary"
+FORWARD_FILL_SOURCE_SIGNALS = True
 
 
 # ========== 2. Basic utilities ==========
@@ -349,16 +351,19 @@ def collect_selected_factors(
 def build_factor_matrix(
     source_df: pd.DataFrame,
     binary_group: str,
+    forward_fill_source_signals: bool = FORWARD_FILL_SOURCE_SIGNALS,
 ) -> tuple[pd.DataFrame, list[str]]:
     """Compute equal-weight mean of all source signals (no letter grouping).
 
-    Returns factor_df with columns [*source_cols, {binary_group}_mean].
-    {binary_group}_mean is the raw continuous mean before binarization.
+    Returns factor_df with columns [*source_cols, {binary_group}].
+    {binary_group} is the raw continuous mean before binarization.
     """
     warnings: list[str] = []
     source_numeric = source_df.apply(pd.to_numeric, errors="coerce")
+    if forward_fill_source_signals:
+        source_numeric = source_numeric.ffill()
 
-    mean_col = f"{binary_group}_mean"
+    mean_col = binary_group
     non_null_count_by_row = source_numeric.notna().sum(axis=1)
     raw_mean = source_numeric.mean(axis=1, skipna=True).rename(mean_col)
 
@@ -405,7 +410,7 @@ def build_signal_ls_matrix(
     Returns signal_df with columns [*source_cols, {binary_group}].
     {binary_group} is 1.0 / -1.0 / NaN only.
     """
-    mean_col = f"{binary_group}_mean"
+    mean_col = binary_group
     binary = binarize_series(factor_df[mean_col], binary_group, warnings)
     signal_df = pd.concat(
         [factor_df[source_cols], binary.rename(binary_group)],
@@ -473,11 +478,14 @@ def build_record(
     scan_record: dict[str, object],
     warnings: list[str],
     output_paths: dict[str, Path],
+    forward_fill_source_signals: bool = FORWARD_FILL_SOURCE_SIGNALS,
 ) -> dict[str, object]:
-    mean_col = f"{binary_group}_mean"
+    mean_col = binary_group
 
     mean_logic = (
-        "Equal-weight row-wise mean of all selected source signal_ls columns "
+        "If forward_fill_source_signals is true, each selected source signal_ls column is "
+        "forward-filled before aggregation; leading NaN values remain NaN. Then calculate "
+        "the equal-weight row-wise mean of all selected source signal_ls columns "
         "(no letter grouping). If all source signals in a row are NaN, the mean is NaN."
     )
     binarization_logic = (
@@ -510,7 +518,11 @@ def build_record(
             "start_date": source_start,
             "end_date": source_end,
         },
-        "grouping_rule": "No letter grouping. All selected source signals are averaged directly.",
+        "grouping_rule": (
+            "No letter grouping. All selected source signals are optionally forward-filled, "
+            "then averaged directly."
+        ),
+        "forward_fill_source_signals": forward_fill_source_signals,
         "mean_factor": {
             "name": mean_col,
             "source_columns": requested_factor_names,
