@@ -476,7 +476,11 @@ def main() -> None:
 
     input_files = list_input_files(INPUT_DIR)
     candidates = load_usable_candidates(USABLE_FACTORS_PATH)
-    candidates = [factor for factor in candidates if factor not in set(BASE_FACTORS)]
+    candidates = [
+        factor
+        for factor in candidates
+        if factor not in set(BASE_FACTORS) and not factor.startswith("W")
+    ]
     if args.limit is not None:
         candidates = candidates[: args.limit]
 

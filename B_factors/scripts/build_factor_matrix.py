@@ -38,6 +38,16 @@ from overseaFactors import (
     generate_overseaFactors_factors,
     metadata_from_overseaFactors_records,
 )
+from profitFactors import (
+    FACTOR_IDS as PROFIT_FACTOR_IDS,
+    generate_profitFactors_factors,
+    metadata_from_profitFactors_records,
+)
+from priceFactors1 import (
+    FACTOR_IDS as PRICE_FACTOR_IDS,
+    generate_priceFactors1_factors,
+    metadata_from_priceFactors1_records,
+)
 
 
 def generate_factor_source_frame(data_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, object]]]:
@@ -49,17 +59,35 @@ def generate_factor_source_frame(data_df: pd.DataFrame) -> tuple[pd.DataFrame, l
         print(f"Skipping stockbondp2q factors: {exc}")
         stockbondp2q_factor_source_df = pd.DataFrame(index=pd.to_datetime(data_df.index))
         stockbondp2q_records = []
-    overseaFactors_factor_source_df, overseaFactors_records = generate_overseaFactors_factors(data_df)
+    try:
+        overseaFactors_factor_source_df, overseaFactors_records = generate_overseaFactors_factors(data_df)
+    except ValueError as exc:
+        if "working_multiple_factors_plan.json missing implemented records" not in str(exc):
+            raise
+        print(f"Skipping overseaFactors factors: {exc}")
+        overseaFactors_factor_source_df = pd.DataFrame(index=pd.to_datetime(data_df.index))
+        overseaFactors_records = []
+    try:
+        profitFactors_factor_source_df, profitFactors_records = generate_profitFactors_factors(data_df)
+    except ValueError as exc:
+        if "working_multiple_factors_plan.json missing implemented records" not in str(exc):
+            raise
+        print(f"Skipping profitFactors factors: {exc}")
+        profitFactors_factor_source_df = pd.DataFrame(index=pd.to_datetime(data_df.index))
+        profitFactors_records = []
+    priceFactors1_factor_source_df, priceFactors1_records = generate_priceFactors1_factors(data_df)
     factor_frames = [
         generate_paper_odds_win_style_rotation_factor_source_frame(data_df),
         stockbondp2q_factor_source_df,
         overseaFactors_factor_source_df,
+        profitFactors_factor_source_df,
+        priceFactors1_factor_source_df,
     ]
     factor_source_df = pd.concat(factor_frames, axis=1, sort=False)
     duplicated_cols = factor_source_df.columns[factor_source_df.columns.duplicated()].tolist()
     if duplicated_cols:
         raise ValueError(f"factor source columns duplicated: {duplicated_cols}")
-    return factor_source_df, stockbondp2q_records + overseaFactors_records
+    return factor_source_df, stockbondp2q_records + overseaFactors_records + profitFactors_records + priceFactors1_records
 
 
 def _print_factor_output_summary(label: str, mounted_factor_df: pd.DataFrame, signal_ls_df: pd.DataFrame) -> None:
@@ -93,8 +121,16 @@ def main() -> None:
     overseaFactors_records = [
         record for record in generated_records if str(record.get("factor_id") or "") in OVERSEA_FACTOR_IDS
     ]
+    profitFactors_records = [
+        record for record in generated_records if str(record.get("factor_id") or "") in PROFIT_FACTOR_IDS
+    ]
+    priceFactors1_records = [
+        record for record in generated_records if str(record.get("factor_id") or "") in PRICE_FACTOR_IDS
+    ]
     factor_metadata.update(metadata_from_stockbondp2q_records(stockbondp2q_records))
     factor_metadata.update(metadata_from_overseaFactors_records(overseaFactors_records))
+    factor_metadata.update(metadata_from_profitFactors_records(profitFactors_records))
+    factor_metadata.update(metadata_from_priceFactors1_records(priceFactors1_records))
     selected_records.extend(generated_records)
     mounted_normalized_factor_df = mount_factor_source_frame(
         factor_source_df=factor_source_df,
