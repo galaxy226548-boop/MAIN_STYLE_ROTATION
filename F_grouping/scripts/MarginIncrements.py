@@ -25,7 +25,7 @@ import pandas as pd
 SCRIPT_PATH = Path(__file__).resolve()
 PROJECT_ROOT = SCRIPT_PATH.parents[2]
 
-BASE_FACTORS = ["V001", "G005", "P001", "G002", "V002", "I002", "G001", "I001"]
+BASE_FACTORS = ["I001", "I002", "I004", "G001", "G002", "G005", "P001", "V001", "V002"]
 
 INPUT_DIR = PROJECT_ROOT / "F_grouping" / "input_COMB"
 USABLE_FACTORS_PATH = PROJECT_ROOT / "F_grouping" / "reference" / "usable_factors.xlsx"
@@ -69,7 +69,7 @@ for path in (
         sys.path.insert(0, path_str)
 
 from Config import Config  # noqa: E402
-from build_signal_altogether_binary_interactive import (  # noqa: E402
+from build_signal_group_binary_interactive import (  # noqa: E402
     build_factor_matrix,
     build_signal_ls_matrix,
     collect_selected_factors,
@@ -156,17 +156,14 @@ def build_group_signal(
         factor_names=factor_names,
         input_files=input_files,
     )
-    factor_df, factor_warnings = build_factor_matrix(
+    factor_df, _groups, factor_warnings = build_factor_matrix(
         source_df=source_df,
+        base_group=group_name,
+        signal_group=f"{group_name}_signal",
         binary_group=group_name,
     )
     warnings = scan_warnings + factor_warnings
-    signal_ls_df = build_signal_ls_matrix(
-        factor_df=factor_df,
-        source_cols=factor_names,
-        binary_group=group_name,
-        warnings=warnings,
-    )
+    signal_ls_df = build_signal_ls_matrix(factor_df=factor_df)
     return source_df, signal_ls_df, warnings
 
 
@@ -642,3 +639,72 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ========== 5. Plot marginal NAV curves ==========
+
+import matplotlib.dates as mdates  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
+
+_NAV_CURVES_PATH = TOTAL_OUTPUT_DIR / NAV_OUTPUT_NAME
+_GRAPH_OUTPUT_DIR = OUTPUT_ROOT / "output_graph"
+
+
+def plot_marginal_nav_curves(
+    nav_curves_path: Path = _NAV_CURVES_PATH,
+    output_dir: Path = _GRAPH_OUTPUT_DIR,
+) -> None:
+    if not nav_curves_path.exists():
+        print(f"[plot] nav_curves not found: {nav_curves_path}")
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    all_nav_df = pd.read_parquet(nav_curves_path)
+    all_nav_df["date"] = pd.to_datetime(all_nav_df["date"])
+
+    candidates = sorted(all_nav_df["candidate_factor"].unique())
+    print(f"[plot] plotting {len(candidates)} candidate factors → {output_dir}")
+
+    for candidate_factor in candidates:
+        df = (
+            all_nav_df[all_nav_df["candidate_factor"] == candidate_factor]
+            .copy()
+            .sort_values("date")
+        )
+        base_first = pd.to_numeric(df["base_nav"].iloc[0], errors="coerce")
+        if pd.isna(base_first) or base_first == 0:
+            print(f"[plot] skip {candidate_factor}: invalid base_nav at first row")
+            continue
+
+        relative_nav = (
+            pd.to_numeric(df["new_nav"], errors="coerce")
+            / pd.to_numeric(df["base_nav"], errors="coerce")
+        )
+        start_date = df["date"].iloc[0].strftime("%Y-%m-%d")
+        end_date = df["date"].iloc[-1].strftime("%Y-%m-%d")
+
+        fig, ax = plt.subplots(figsize=(12, 5))
+        ax.plot(df["date"], relative_nav, linewidth=1.2, color="#1f77b4")
+        ax.axhline(y=1.0, color="gray", linestyle="--", linewidth=0.8, alpha=0.7)
+        ax.set_title(
+            f"Relative NAV: BASE + {candidate_factor}  ({start_date} → {end_date})",
+            fontsize=11,
+        )
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Relative NAV  (new / base)")
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        fig.autofmt_xdate()
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+
+        out_path = output_dir / f"{candidate_factor}.png"
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"[plot] saved: {out_path}")
+
+    print(f"[plot] done — {len(candidates)} charts saved to {output_dir}")
+
+
+if __name__ == "__main__":
+    plot_marginal_nav_curves()

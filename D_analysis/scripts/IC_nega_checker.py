@@ -151,6 +151,134 @@ def main() -> None:
         for error in errors:
             print(f"- {error}")
 
+    cleanup_removed_duplicate_outputs()
+    export_nega_doubt_factor_records(doubt_path)
+
+
+def read_removed_duplicate_factor_ids(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+
+    factor_ids: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or stripped.startswith("| ---"):
+            continue
+
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) < 3 or cells[1] == "Removed factor":
+            continue
+
+        removed_factor = cells[1]
+        if removed_factor:
+            factor_ids.add(removed_factor)
+
+    return factor_ids
+
+
+def factor_group_from_id(factor_id: str) -> str | None:
+    for char in factor_id:
+        if char.isalpha():
+            return char.upper()
+    return None
+
+
+def remove_path(path: Path) -> bool:
+    import shutil
+
+    if not path.exists():
+        return False
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+    return True
+
+
+def cleanup_removed_duplicate_outputs() -> None:
+    duplicates_path = PROJECT_ROOT / "B_factors" / "output" / "grouping_document" / "RemoveDuplicates.md"
+    if not duplicates_path.exists():
+        print(f"Duplicate cleanup skipped: {duplicates_path} does not exist")
+        return
+
+    removed_factor_ids = read_removed_duplicate_factor_ids(duplicates_path)
+    ic_deleted = 0
+    backtest_deleted = 0
+
+    ic_root = PROJECT_ROOT / "D_analysis" / "IC_output"
+    backtest_root = PROJECT_ROOT / "E_backtesting" / "Result"
+
+    for factor_id in sorted(removed_factor_ids):
+        group = factor_group_from_id(factor_id)
+        if group is None:
+            continue
+
+        ic_dir = ic_root / f"factor_{group}"
+        for ic_path in (
+            ic_dir / f"{factor_id}_IC_analysis.xlsx",
+            ic_dir / f"{factor_id}_rolling_IC.png",
+        ):
+            if remove_path(ic_path):
+                ic_deleted += 1
+
+        backtest_dir = backtest_root / f"factor_{group}"
+        if backtest_dir.exists():
+            for backtest_path in backtest_dir.glob(f"*_*_{factor_id}"):
+                if remove_path(backtest_path):
+                    backtest_deleted += 1
+
+    print(f"Duplicate cleanup factors loaded: {len(removed_factor_ids)}")
+    print(f"Duplicate cleanup IC files deleted: {ic_deleted}")
+    print(f"Duplicate cleanup backtest outputs deleted: {backtest_deleted}")
+
+
+def export_nega_doubt_factor_records(doubt_path: Path) -> None:
+    import json
+    from datetime import datetime, timezone
+
+    generated_path = PROJECT_ROOT / "B_factors" / "output" / "factor_generated.json"
+    output_path = PROJECT_ROOT / "D_analysis" / "check_output" / "nega_doubt_factors.json"
+
+    if not doubt_path.exists():
+        print(f"Nega doubt factor export skipped: {doubt_path} does not exist")
+        return
+    if not generated_path.exists():
+        print(f"Nega doubt factor export skipped: {generated_path} does not exist")
+        return
+
+    doubt_ids = read_recorded_ids(doubt_path)
+    generated_data = json.loads(generated_path.read_text(encoding="utf-8"))
+    generated_records = generated_data.get("records", [])
+
+    matched_records = [
+        record
+        for record in generated_records
+        if str(record.get("factor_id", "")).strip() in doubt_ids
+    ]
+    matched_ids = {
+        str(record.get("factor_id", "")).strip()
+        for record in matched_records
+        if str(record.get("factor_id", "")).strip()
+    }
+
+    output_data = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "source_file": str(generated_path.relative_to(PROJECT_ROOT)),
+        "doubt_file": str(doubt_path.relative_to(PROJECT_ROOT)),
+        "doubt_factor_count": len(doubt_ids),
+        "matched_record_count": len(matched_records),
+        "missing_factor_ids": sorted(doubt_ids - matched_ids),
+        "records": matched_records,
+    }
+
+    output_path.write_text(
+        json.dumps(output_data, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Nega doubt factor records exported: {output_path}")
+    print(f"Nega doubt factor records matched: {len(matched_records)}")
+    print(f"Nega doubt factor ids missing: {len(doubt_ids - matched_ids)}")
+
 
 if __name__ == "__main__":
     main()

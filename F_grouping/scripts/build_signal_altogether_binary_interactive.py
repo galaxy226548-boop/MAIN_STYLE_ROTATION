@@ -174,6 +174,10 @@ def load_inventory_factor_index(
 
         relative_path = str(row.get("relative_path", "")).strip() or file_name
         path = input_dir / relative_path
+        if not path.exists():
+            warnings.append(f"Inventory entry points to a missing file and will be ignored: {path}")
+            continue
+
         columns = parse_inventory_columns(row.get("first_raw_values"))
         rows.append(
             {
@@ -572,7 +576,6 @@ def main() -> None:
     base_group, binary_group = normalize_factor_group(input_factor_group)
     factor_names = ask_factor_names()
     output_paths = build_output_paths(binary_group)
-    confirm_overwrite_if_needed(output_paths)
 
     print("\n========== 参数确认 ==========")
     print("input_factor_group:", input_factor_group)
@@ -607,6 +610,8 @@ def main() -> None:
         binary_group=binary_group,
         warnings=warnings,
     )
+
+    confirm_overwrite_if_needed(output_paths)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

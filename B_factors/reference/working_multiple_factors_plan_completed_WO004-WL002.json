@@ -1,0 +1,41 @@
+[
+  {
+    "paper_id": "20231130-国泰君安-2024年风格轮动展望：从小成长到大周期，基于宏观友好度评分指标系",
+    "factor": "US美林周期友好度评分",
+    "code": "F007",
+    "factor_id": "WO004",
+    "signal_type": "state",
+    "calc_method": "由US滞胀指标经移动平均、滤波平滑、标准化、百分位调整得到",
+    "signal_rule": ">0 => growth; <0 => value",
+    "condition": "# 用美国CPI同比与制造业PMI新订单近似美林时钟维度\n# 注：原研报未披露底层指标，以下为本地数据近似实现\nus_cpi_yoy = macro_df.loc[macro_df['国家/地区']=='美国', '今值']  # 筛选美国CPI\nus_pmi_new = macro_df.loc[macro_df['指标名称'].str.contains('PMI.*新订单|New Orders', na=False) & (macro_df['国家/地区']=='美国'), '今值']\n# 分别做rolling zscore\nz_cpi = calc_rolling_zscore(us_cpi_yoy.resample('MS').last().ffill(), window=60)\nz_pmi = calc_rolling_zscore(us_pmi_new.resample('MS').last().ffill(), window=60)\n# 增长友好 => 通胀低（CPI低）+ PMI新订单高，综合打分\n# 研报原始方向未知；此处假设低通胀+高增长 => 成长友好\nraw = z_pmi - z_cpi\nfactor = calc_rolling_zscore(raw, window=60)",
+    "docu": "A_data/prepared_data/macro.parquet（筛选国家/地区==美国）；补充：A_data/data/Daily/D_国债收益率_US_530430_260324.xlsx",
+    "data_field": "macro.parquet['国家/地区']（筛选'美国'），['指标名称']，['今值']；D_国债收益率_US_530430_260324.xlsx['美国:国债收益率:10年']，['美国:国债收益率:2年']",
+    "notes": "研报未披露美国美林周期友好度的具体底层指标及处理方式，condition为近似实现：以美国CPI同比（低通胀利好成长）和制造业PMI新订单（高增长利好成长）组合。若研报实际使用ISM/PCE/就业等指标，需替换对应字段。本地macro.parquet源自宏观大事合并整理，覆盖多国指标，需按国家/地区和指标名称筛选。"
+  },
+  {
+    "paper_id": "20230622-国泰君安-从板块配置轮盘到5大行业风格友好度评分指标：行业风格轮动背后的周期线索",
+    "factor": "CN库存周期友好度评分",
+    "code": "F006",
+    "factor_id": "WG004",
+    "signal_type": "state",
+    "calc_method": "滞销指标(F002)的逆序百分位数（扩展窗口）",
+    "signal_rule": ">0 => growth; <0 => value",
+    "condition": "# F002 = 产成品存货同比（规模以上工业企业），即滞销指标\n# 逆序扩展百分位：评分越高=去库存越容易=库存周期越友好\n# 转换为以0为中心的连续因子：>0 => growth friendly; <0 => value friendly\ninventory_yoy = macro_monthly_df['中国:产成品存货:规模以上工业企业:同比'].dropna()\npct_rank = inventory_yoy.expanding(min_periods=12).rank(pct=True)  # 扩展窗口百分位\n# F002原始百分位：rank越高=库存同比越高=越滞销\n# 逆序 = 100 - F002 (原始condition已给出逆序)\n# 再减去50转为以0为中心的连续因子，正值表示库存周期友好（利成长）\nraw = (100 - pct_rank.mul(100)) - 50\nfactor = calc_rolling_zscore(raw, window=60)",
+    "docu": "A_data/prepared_data/macro_monthly.parquet；原始文件：A_data/data/Monthly/规模以上工业 招证资配.xlsx",
+    "data_field": "规模以上工业 招证资配.xlsx（sheet: 中国_利润总额_规模以上工业企业_累计值），['中国:产成品存货:规模以上工业企业:同比']",
+    "notes": "F002底层指标为产成品存货同比。评分越高表示去库存难度越低，库存周期对成长风格越友好。原condition为逆序百分位(100-rank)，此处在此基础上减50转为以0为中心的连续值，再做rolling zscore以统一量纲。macro_monthly.parquet已聚合该字段。"
+  },
+  {
+    "paper_id": "20230622-国泰君安-从板块配置轮盘到5大行业风格友好度评分指标：行业风格轮动背后的周期线索",
+    "factor": "CN金融周期友好度评分",
+    "code": "F007",
+    "factor_id": "WL002",
+    "signal_type": "state",
+    "calc_method": "货币缺口指标(F001)的逆序百分位数（扩展窗口）",
+    "signal_rule": ">0 => growth; <0 => value",
+    "condition": "# F001 = 货币缺口 = M2同比 - 社融存量同比（宽货币/紧信用差值）\n# 逆序百分位：评分越高=金融环境越宽松=越利好成长\nm2_yoy = macro_monthly_df['中国:M2:同比'].dropna()\ntsf_stock_yoy = macro_monthly_df['中国:社会融资规模存量:同比'].dropna()\n# 对齐日期后计算货币缺口\ngap = m2_yoy.subtract(tsf_stock_yoy, fill_value=None).dropna()\n# 扩展窗口逆序百分位（原condition逻辑）\npct_rank = gap.expanding(min_periods=12).rank(pct=True)\n# 逆序并转为以0为中心的连续因子\nraw = (100 - pct_rank.mul(100)) - 50\nfactor = calc_rolling_zscore(raw, window=60)",
+    "docu": "A_data/prepared_data/macro_monthly.parquet；原始文件：A_data/data/Monthly/M_社融_CN_0203_2602.xlsx；补充：A_data/data/Monthly/L001_中国_社会融资规模_当月值.xlsx",
+    "data_field": "M_社融_CN_0203_2602.xlsx（sheet: 中国_M1_同比），['中国:M2:同比']，['中国:社会融资规模存量:同比']；L001_中国_社会融资规模_当月值.xlsx，['中国:社会融资规模存量:同比']（备用）",
+    "notes": "F001货币缺口定义为M2同比减社融存量同比，代表货币相对信用的宽松程度。评分越高表示金融环境越宽松，对成长风格越友好。原condition为逆序百分位(100-rank)，此处减50转为以0为中心连续值后做rolling zscore。M2同比与社融存量同比均在M_社融_CN_0203_2602.xlsx同一sheet中，已并入macro_monthly.parquet。"
+  }
+]

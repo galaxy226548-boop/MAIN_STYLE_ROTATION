@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20170918-申万宏源-风格轮动与行业聚类",
+          "factor": "风格相对强弱指数",
+          "code": "F001",
+          "factor_id": "V106",
+          "signal_type": "state",
+          "calc_method": "ln(风格指数1累积收益率+1) - ln(风格指数2累积收益率+1)。风格指数1为目标风格板块指数，风格指数2可选择全市场指数或另一风格指数。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 以国证成长(399370)为风格指数1，国证价值(399371)为风格指数2\n# ln(cum_return_growth+1) - ln(cum_return_value+1) = ln(close_g/close_g_base) - ln(close_v/close_v_base)\n# 等价于 log(close_g) - log(close_v) + const，直接用对数价格差表示相对强弱\nrs = np.log(close_growth) - np.log(close_value)   # >0成长相对强势\nfactor = calc_rolling_zscore(rs, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "研报原文风格指数为申万一级行业聚类划分的五大板块加权构建，本地无此自定义数据。以国证成长(399370)代替成长板块指数、国证价值(399371)代替价值板块指数作为替代方案。此因子为V107/V108（斜率/斜率变化率）的中间变量sub_1。"
+        },
+        {
+          "paper_id": "20170918-申万宏源-风格轮动与行业聚类",
+          "factor": "风格相对强弱指数斜率 (β1)",
+          "code": "F002",
+          "factor_id": "V107",
+          "signal_type": "state",
+          "calc_method": "对风格相对强弱指数 (F001) 进行移动窗口线性回归，以时间（如窗口内各交易日序号）为自变量，相对强弱指数为因变量，回归系数作为斜率 β1。窗口长度研报未明确。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# rs为V106相对强弱指数：log(close_growth) - log(close_value)\nrs = np.log(close_growth) - np.log(close_value)\n# 移动窗口线性回归取斜率，窗口建议60个交易日\nbeta1 = calc_rolling_linear_regression_slope(rs, window=60)\n# β1>0表示成长相对强势趋势向上\nfactor = calc_rolling_zscore(beta1, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "窗口长度研报未明确，推测为60个交易日（约3个月）。回归前可加MA平滑rs序列以过滤噪声（未纳入此处）。依赖V106的rs计算结果。"
+        },
+        {
+          "paper_id": "20170918-申万宏源-风格轮动与行业聚类",
+          "factor": "风格相对强弱指数斜率变化率 (β2)",
+          "code": "F003",
+          "factor_id": "V108",
+          "signal_type": "state",
+          "calc_method": "β2 = β1 的一阶差分，即 β1_t - β1_{t-1}。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# beta1为V107斜率序列\nrs = np.log(close_growth) - np.log(close_value)\nbeta1 = calc_rolling_linear_regression_slope(rs, window=60)\nbeta2 = beta1 - beta1.shift(1)   # β2 > 0 表示成长相对强势加速\nfactor = calc_rolling_zscore(beta2, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "β2为β1一阶差分，刻画相对强弱曲线加速度。β2>0表示成长相对强势趋势在加速，方向已与signal_rule对齐（>0 => growth）。依赖V107的beta1计算结果。"
+        },
+        {
+          "paper_id": "20180314-申万宏源-风格轮动与行业配置",
+          "factor": "风格相对强弱指标",
+          "code": "F001",
+          "factor_id": "V109",
+          "signal_type": "state",
+          "calc_method": "ln(风格A指数价格) - ln(风格B指数价格)",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 以国证成长(399370)为风格A，国证价值(399371)为风格B\n# ln(close_g) - ln(close_v) > 0 => 成长相对强势\nrs = np.log(close_growth) - np.log(close_value)\nfactor = calc_rolling_zscore(rs, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "研报原文使用金融、周期、消费、成长四大自定义风格指数价格，本地无此数据。以国证成长(399370)和国证价值(399371)作为成长/价值风格替代。此因子与V106计算逻辑相同，为V110斜率因子的中间变量。"
+        },
+        {
+          "paper_id": "20180314-申万宏源-风格轮动与行业配置",
+          "factor": "风格相对强弱斜率(一阶导数)",
+          "code": "F002",
+          "factor_id": "V110",
+          "signal_type": "state",
+          "calc_method": "对RS序列进行移动平均过滤，再在移动窗口内做一元线性回归，取斜率作为一阶导数替代。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# rs为V109相对强弱序列\nrs = np.log(close_growth) - np.log(close_value)\n# 先做移动平均过滤（平滑窗口建议20日），再滚动线性回归取斜率\nrs_smooth = rs.rolling(20).mean()\nslope = calc_rolling_linear_regression_slope(rs_smooth, window=60)\n# slope>0表示成长相对强势趋势向上\nfactor = calc_rolling_zscore(slope, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "研报未明确移动平均窗口和线性回归窗口大小，此处取平滑窗口=20日、回归窗口=60日作为默认值。与V107计算逻辑相近，区别在于本因子先对RS进行MA平滑再做回归。"
+        }
+      ]
+    }
+  }
+}

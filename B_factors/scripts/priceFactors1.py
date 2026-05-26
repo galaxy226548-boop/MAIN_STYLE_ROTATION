@@ -38,12 +38,12 @@ from factor_utils import (
 OUTPUT_PREFIX = "priceFactors1"
 PLAN_PATH = PROJECT_ROOT / "B_factors" / "reference" / "working_multiple_factors_plan.json"
 
-FACTOR_IDS = [
+LEGACY_FACTOR_IDS = [
     "V019",
     "V020",
     "V022",
-    "V023",
-    "V024",
+    "V228",
+    "V229",
     "V025",
     "V026",
     "V027",
@@ -58,8 +58,28 @@ FACTOR_IDS = [
     "V064",
 ]
 
+PLAN_FACTOR_IDS = [
+    "V021",
+    "V035",
+    "V037",
+    "V038",
+    "V044",
+    "V052",
+    "V053",
+    "V054",
+    "V055",
+    "V057",
+    "V058",
+    "V065",
+]
+
+FACTOR_IDS = LEGACY_FACTOR_IDS + PLAN_FACTOR_IDS
+
+LEGACY_SIGNAL_TYPES = {
+    "V041": "event",
+}
+
 UNIMPLEMENTED_FACTORS = {
-    "V021": "窗口参数 window_vol/window_smooth 未明确，未使用自定义假设生成。",
     "V028": "计划记录为 unknown，且上游指数价格口径不明确。",
     "V029": "计划记录为 unknown，且下游指数价格口径不明确。",
     "V030": "计划记录为 todo，消费指数口径和独立信号阈值不明确。",
@@ -67,21 +87,11 @@ UNIMPLEMENTED_FACTORS = {
     "V032": "计划记录为 todo，消费指数为海通自定义且单因子方向未知。",
     "V033": "计划记录为 todo，非消费指数为海通自定义且单因子方向未知。",
     "V034": "行业 ETF 动量未明确对应成长/价值方向。",
-    "V035": "备注说明需结合相对强弱，单独信号方向不明确。",
     "V036": "本地 mktP.parquet 缺少 open/high/low，无法计算日内动量。",
-    "V038": "通道参数 N 未明确。",
     "V040": "需自行构建市值因子多空净值，未使用代理口径。",
     "V042": "计划记录为 unknown，且行业动量方向不对应固定成长/价值。",
-    "V044": "反转参数 K 和独立方向不明确。",
-    "V052": "需中证2000价格，未使用中证1000代理。",
-    "V053": "反转窗口和标准化窗口未明确。",
-    "V054": "condition 与备注中的月度滞后口径不一致。",
-    "V055": "condition 与备注中的月度滞后口径不一致。",
     "V056": "计划记录为 unknown，需自建消费/非消费指数。",
-    "V057": "海通成长/价值指数定义及 window_z 未明确。",
-    "V058": "海通成长/价值指数缺失，且无单独阈值方向。",
     "V063": "需构建微盘和大市值组合，未使用代理口径。",
-    "V065": "MACD 参数和方向不明确。",
 }
 
 HS300_PRICE_FILE = "沪深300(000300.SH)-历史价格.xlsx"
@@ -116,7 +126,7 @@ def _load_plan_records() -> list[dict[str, object]]:
     for sheet_name, sheet_meta in payload.get("sheets", {}).items():
         for record in sheet_meta.get("records", []):
             factor_id = str(record.get("factor_id") or "")
-            if factor_id not in FACTOR_IDS:
+            if factor_id not in PLAN_FACTOR_IDS:
                 continue
             item = dict(record)
             item["_source_file"] = source_file
@@ -124,7 +134,7 @@ def _load_plan_records() -> list[dict[str, object]]:
             records.append(_record_with_actual_fields(item))
 
     found = {str(record["factor_id"]) for record in records}
-    missing = [factor_id for factor_id in FACTOR_IDS if factor_id not in found]
+    missing = [factor_id for factor_id in PLAN_FACTOR_IDS if factor_id not in found]
     if missing:
         raise ValueError(f"working_multiple_factors_plan.json missing implemented records: {missing}")
     return records
@@ -138,30 +148,37 @@ def _append_note(record: dict[str, object], note: str) -> None:
 def _record_with_actual_fields(record: dict[str, object]) -> dict[str, object]:
     factor_id = str(record["factor_id"])
     record["signal_type"] = _normalize_plan_text(record.get("signal_type")) or "state"
-    if factor_id in {"V043", "V061"}:
-        _append_note(record, "本脚本从 AIndexEODPrices.parquet 读取本地可用的中证1000(000852.SH)。")
-    elif factor_id == "V051":
-        record["data_field"] = (
-            "AIndexHS300FreeWeight.parquet[S_INFO_WINDCODE,S_CON_WINDCODE,TRADE_DT]; "
-            "mktP.parquet[Stkcd,Trddt,Dnvaltrd,Adjprcwd]"
-        )
-    elif factor_id == "V059":
-        _append_note(record, "方向按人工确认改为 growth 40日收益 - value 40日收益，zscore窗口=180日。")
-    elif factor_id == "V062":
-        _append_note(record, "按计划 data_field 使用国证成长399370/国证价值399371价格比，zscore窗口=6日。")
+    if factor_id == "V044":
+        _append_note(record, "condition 仅给出成长/价值20日收益，本脚本按头部风格20日收益转负构造反转信号。")
+    elif factor_id in {"V057", "V058"}:
+        _append_note(record, "本脚本按 condition 使用本地 growth_index.xlsx/value_index.xlsx，不额外调整方向。")
+    elif factor_id == "V065":
+        _append_note(record, "本脚本按 condition 使用国证成长399370的MACD计算5日均值减20日均值。")
     return record
 
 
 def metadata_from_priceFactors1_records(records: list[dict[str, object]]) -> dict[str, dict[str, object]]:
-    return {
-        str(record["factor_id"]): {
-            "signal_type": _normalize_plan_text(record.get("signal_type")) or "state",
+    metadata = {
+        factor_id: {
+            "signal_type": LEGACY_SIGNAL_TYPES.get(factor_id, "state"),
             "bar": 0.0,
-            "factor": record.get("factor"),
-            "progress": record.get("progress"),
+            "factor": None,
+            "progress": None,
         }
-        for record in records
+        for factor_id in LEGACY_FACTOR_IDS
     }
+    metadata.update(
+        {
+            str(record["factor_id"]): {
+                "signal_type": _normalize_plan_text(record.get("signal_type")) or "state",
+                "bar": 0.0,
+                "factor": record.get("factor"),
+                "progress": record.get("progress"),
+            }
+            for record in records
+        }
+    )
+    return metadata
 
 
 def _index_code_key(value: object) -> str:
@@ -386,6 +403,11 @@ def _calc_v064() -> pd.Series:
     return macd - macd.rolling(3, min_periods=3).mean()
 
 
+def _calc_v065() -> pd.Series:
+    macd = _load_index_eod_series(GROWTH_STYLE_INDEX, "MACD", "growth_macd")
+    return macd.rolling(5, min_periods=5).mean() - macd.rolling(20, min_periods=20).mean()
+
+
 def generate_priceFactors1_factors(data_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, object]]]:
     data_df = data_df.copy()
     data_df.index = pd.to_datetime(data_df.index)
@@ -415,11 +437,11 @@ def generate_priceFactors1_factors(data_df: pd.DataFrame) -> tuple[pd.DataFrame,
     _register_factor(raw_factor_df, factor_source_df, "V022_raw", (vol_growth_180 - vol_value_180) * -1.0)
 
     vol_3m = hs300_ret.rolling(63, min_periods=63).std()
-    _register_factor(raw_factor_df, factor_source_df, "V023_raw", _empirical_cdf_to_normal(vol_3m) * -1.0)
+    _register_factor(raw_factor_df, factor_source_df, "V228_raw", _empirical_cdf_to_normal(vol_3m) * -1.0)
 
     wind_all_a_ret = _load_wind_all_a_close().pct_change(fill_method=None)
     vol_ewm = _ewm_volatility(wind_all_a_ret, halflife=60, window=120, annualize=True)
-    _register_factor(raw_factor_df, factor_source_df, "V024_raw", (vol_ewm - 0.20) * -1.0)
+    _register_factor(raw_factor_df, factor_source_df, "V229_raw", (vol_ewm - 0.20) * -1.0)
 
     vol_growth_63 = growth_ret.rolling(63, min_periods=63).std()
     vol_value_63 = value_ret.rolling(63, min_periods=63).std()
@@ -456,6 +478,59 @@ def generate_priceFactors1_factors(data_df: pd.DataFrame) -> tuple[pd.DataFrame,
     _register_factor(raw_factor_df, factor_source_df, "V062_raw", calc_rolling_zscore(gz_growth / gz_value, 6))
 
     _register_factor(raw_factor_df, factor_source_df, "V064_raw", _calc_v064())
+
+    vol_growth_60 = growth_ret.rolling(60, min_periods=60).std() * np.sqrt(252)
+    vol_value_60 = value_ret.rolling(60, min_periods=60).std() * np.sqrt(252)
+    vol_ratio = vol_growth_60 / vol_value_60.replace(0.0, np.nan)
+    _register_factor(raw_factor_df, factor_source_df, "V021_raw", (vol_ratio.rolling(20, min_periods=20).mean() - 1.0) * -1.0)
+
+    ret_growth_20 = _rolling_return(growth, 20)
+    ret_value_20 = _rolling_return(value, 20)
+    relative_strength = ret_growth_20 - ret_value_20
+    _register_factor(raw_factor_df, factor_source_df, "V035_raw", relative_strength - relative_strength.shift(5))
+
+    _register_factor(raw_factor_df, factor_source_df, "V037_raw", _rolling_return(hs300, 63))
+
+    value_growth_rsi = (1.0 + value_ret).cumprod() / (1.0 + growth_ret).cumprod()
+    rsi_upper = value_growth_rsi.rolling(60, min_periods=60).max()
+    rsi_lower = value_growth_rsi.rolling(60, min_periods=60).min()
+    rsi_half = (rsi_upper - rsi_lower) / 2.0
+    rsi_mid = (rsi_upper + rsi_lower) / 2.0
+    _register_factor(
+        raw_factor_df,
+        factor_source_df,
+        "V038_raw",
+        ((value_growth_rsi - rsi_mid) / rsi_half.replace(0.0, np.nan)) * -1.0,
+    )
+
+    v044 = pd.Series(0.0, index=ret_growth_20.index, dtype="float64")
+    v044.loc[(ret_value_20 > ret_growth_20) & (ret_value_20 < 0)] = 1.0
+    v044.loc[(ret_growth_20 > ret_value_20) & (ret_growth_20 < 0)] = -1.0
+    v044.loc[ret_growth_20.isna() | ret_value_20.isna()] = np.nan
+    _register_factor(raw_factor_df, factor_source_df, "V044_raw", v044)
+
+    rel_nv = growth / value
+    _register_factor(
+        raw_factor_df,
+        factor_source_df,
+        "V052_raw",
+        rel_nv.rolling(20, min_periods=20).mean() - rel_nv.rolling(180, min_periods=180).mean(),
+    )
+
+    ret_diff_60 = _rolling_return(value, 60) - _rolling_return(growth, 60)
+    _register_factor(raw_factor_df, factor_source_df, "V053_raw", calc_rolling_zscore(ret_diff_60, 180) * -1.0)
+
+    lagged_value_growth_ret_diff = (value_ret - growth_ret).shift(1) * -1.0
+    _register_factor(raw_factor_df, factor_source_df, "V054_raw", lagged_value_growth_ret_diff)
+    _register_factor(raw_factor_df, factor_source_df, "V055_raw", lagged_value_growth_ret_diff)
+
+    ret_diff_20 = _rolling_return(value, 20) - _rolling_return(growth, 20)
+    _register_factor(raw_factor_df, factor_source_df, "V057_raw", calc_rolling_zscore(ret_diff_20, 180))
+
+    ret_diff_40 = _rolling_return(value, 40) - _rolling_return(growth, 40)
+    _register_factor(raw_factor_df, factor_source_df, "V058_raw", calc_rolling_zscore(ret_diff_40, 180))
+
+    _register_factor(raw_factor_df, factor_source_df, "V065_raw", _calc_v065())
 
     missing_cols = [factor_id for factor_id in FACTOR_IDS if factor_id not in factor_source_df.columns]
     if missing_cols:

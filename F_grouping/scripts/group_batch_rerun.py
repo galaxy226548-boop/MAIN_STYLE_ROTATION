@@ -141,6 +141,10 @@ def run_signal_group(sg_mod: ModuleType, record: dict) -> list[str]:
     factor_names: list[str] = _extract_factor_names(record)
     if not factor_names:
         raise ValueError(f"No source factor names found in record for {signal_group!r}")
+    forward_fill_source_signals = record.get(
+        "forward_fill_source_signals",
+        getattr(sg_mod, "FORWARD_FILL_SOURCE_SIGNALS", True),
+    )
 
     input_files = sg_mod.list_input_files(sg_mod.INPUT_DIR)
     source_df, scan_record, scan_warnings = sg_mod.collect_selected_factors(
@@ -151,6 +155,7 @@ def run_signal_group(sg_mod: ModuleType, record: dict) -> list[str]:
         source_df=source_df,
         base_group=base_group,
         signal_group=signal_group,
+        forward_fill_source_signals=forward_fill_source_signals,
     )
     warnings: list[str] = scan_warnings + factor_warnings
     signal_ls_df = sg_mod.build_signal_ls_matrix(factor_df)
@@ -169,6 +174,7 @@ def run_signal_group(sg_mod: ModuleType, record: dict) -> list[str]:
         scan_record=scan_record,
         warnings=warnings,
         output_paths=output_paths,
+        forward_fill_source_signals=forward_fill_source_signals,
     )
 
     factor_df.to_parquet(output_paths["factor_parquet"])

@@ -1,0 +1,308 @@
+{
+  "signal_type": "event",
+  "batch_index": 1,
+  "total_batches": 2,
+  "record_count": 30,
+  "records": [
+    {
+      "factor_id": "G003",
+      "factor": "制造业固定资产投资完成额累计同比环比上升",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"固定资产投资\")][\"今值\"]",
+      "condition": "sub_1 - sub_1.shift(1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw50.63_L02"
+    },
+    {
+      "factor_id": "D001",
+      "factor": "M2-社融同比（趋势周期=1月，影响方向=负）",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"社会融资规模存量:同比\")][\"今值\"]",
+      "condition": "data_diff(sub_1-sub_2)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw51.40_L23"
+    },
+    {
+      "factor_id": "O001",
+      "factor": "PMI 美国",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"美国\" & ([\"指标名称\"].include(\"月制造业PMI\")or [\"指标名称\"].include(\"ISM制造业PMI\")）,:][\"今值\"]",
+      "condition": "sub_1-50",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw52.92_L73"
+    },
+    {
+      "factor_id": "O002",
+      "factor": "非农就业人数",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"美国\" & ([\"指标名称\"].include(\"非农就业人数\")）,:][\"今值\"]",
+      "condition": "calc_rolling_zscore(data_yoy(sub_1),24)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw51.98_L89"
+    },
+    {
+      "factor_id": "G005",
+      "factor": "宏观事件：出口当月同比预期环比下降，实际环比上升",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"中国\" & ([\"指标名称\"].include(\"月出口金额:当月同比\")）,:][\"预测值\"], \"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"中国\" & ([\"指标名称\"].include(\"月出口金额:当月同比\")）,:][\"今值\"]",
+      "condition": "calc_rolling_zscore(if(sub_1*sub_2<0,sub_2-sub_1,0),24)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "1_mw51.20_L35_2"
+    },
+    {
+      "factor_id": "I003",
+      "factor": "1年期国债到期收益率",
+      "signal_type": "event",
+      "docu": "\"data_public/流动性/D_国债到期收益率_CN_020104_260409.xlsx\"[\"中债国债到期收益率:1年\"]",
+      "condition": "(groupby(\"M\").average() / groupby(\"M\").average().shift(1) -1) * -1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw52.92_ZHAO07"
+    },
+    {
+      "factor_id": "G006",
+      "factor": "新增社零",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"社会消费品零售总额\")][\"今值\"]",
+      "condition": "rollingsum(sub_1,window=12)/(rollingsum(sub_1,window=12).shift(1))-1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw50.99_ZHAO11"
+    },
+    {
+      "factor_id": "L028",
+      "factor": "M1同比-M2同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"M2\")][\"今值\"],data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1\")][\"今值\"]",
+      "condition": "sub_1-sub_2",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "0_mw49.37_ZHAO18"
+    },
+    {
+      "factor_id": "F006",
+      "factor": "PPI",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"]",
+      "condition": "sub_1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw48.65_ZHAO20"
+    },
+    {
+      "factor_id": "D004",
+      "factor": "社融同比/M2同比（社融/M2（一致预期））",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M2:同比\")][\"预测值\"],\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"社会融资规模存量:同比\")][\"预测值\"]",
+      "condition": "data_yoy(sub_2/sub_1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D005",
+      "factor": "M2同比-名义GDP同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"季度GDP:当季同比(%)\")][\"今值\"]",
+      "condition": "先将sub_1和sub_2的表join到一起，保留两个数列的index，在一个有、一个没有的时候，缺的那个先填NA，然后在每个日期（sub_1或sub_2数据出现新数据），计算最新的sub_1-sub_2（缺失值就往之前找，用上一个最新的值，不是NaN的就用自身数值）",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw50.52_L25"
+    },
+    {
+      "factor_id": "F005",
+      "factor": "CPI 当月同比_环比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "sub_1 - sub_1.shift(1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "G009",
+      "factor": "PMI（制造业PMI）",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "sub_1-50",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw51.49_L24_1"
+    },
+    {
+      "factor_id": "G011",
+      "factor": "PMI (12MA)",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "llt(sub_1-50,12)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw47.60_L49"
+    },
+    {
+      "factor_id": "G012",
+      "factor": "PMI-50作为环比增速推算同比增速",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "calc_rolling_zscore(sub_1-50,12)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "3_mw50.79_L54"
+    },
+    {
+      "factor_id": "G014",
+      "factor": "PMI近三个月均值-过去三个月均值",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "_rolling_sum_ratio_minus_one(sub_1, 3, 1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw53.93_L66"
+    },
+    {
+      "factor_id": "G015",
+      "factor": "PMI同比短期均线穿长期均线",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "z_MA_div(sub_1, 3, 6, 12)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw51.94_L67"
+    },
+    {
+      "factor_id": "G016",
+      "factor": "PMI (3MA)",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"官方制造业PMI\")][\"今值\"]",
+      "condition": "llt(sub_1-50,3)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw49.27_L71"
+    },
+    {
+      "factor_id": "G017",
+      "factor": "新增出口额(美元)TTM同比增速",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"中国\" & ([\"指标名称\"].include(\"月出口金额:当月同比\")）,:][\"今值\"]",
+      "condition": "calc_rolling_zscore(if(sub_1.rolling(window=12).mean()*sub_1.rolling(window=12).mean().shift(1)>0,sub_1.rolling(window=12).mean()/sub_1.rolling(window=12).mean().shift(1)-1,sub_1.rolling(window=12).mean()),18)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw49.90_L97"
+    },
+    {
+      "factor_id": "L014",
+      "factor": "M2-M1 当月同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1:同比\")][\"今值\"]",
+      "condition": "calc_rolling_zscore(sub_2-sub_1)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw46.06_L33"
+    },
+    {
+      "factor_id": "L015",
+      "factor": "M2同比-M1同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1:同比\")][\"今值\"]",
+      "condition": "data_yoy(sub_2-sub_1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "L016",
+      "factor": "M2同比-M1同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1:同比\")][\"今值\"]",
+      "condition": "z_data_deviation(sub_2-sub_1,3,12)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw48.67_L34"
+    },
+    {
+      "factor_id": "L018",
+      "factor": "M1-M2短期均线穿长期均线",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"M2:同比\")][\"今值\"],data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1:同比\")][\"今值\"]",
+      "condition": "z_MA_div(sub_2-sub_1, 3, 6, 12)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "3_mw48.57_L37"
+    },
+    {
+      "factor_id": "L020",
+      "factor": "M1 当月同比（历史胜率55.16%）",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"M1:同比\")][\"今值\"]",
+      "condition": "sub_1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw50.79_L39"
+    },
+    {
+      "factor_id": "O008",
+      "factor": "美国CPI同比（趋势周期=1月）",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\".loc[[\"国家/地区\"]==\"美国\" & ([\"指标名称\"].include(\"月CPI\") & [\"指标名称\"].include(\"同比\")）,:][\"今值\"]",
+      "condition": "data_diff(sub_1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw49.48_L85"
+    },
+    {
+      "factor_id": "P004",
+      "factor": "CPI-PPI近三个月均值-过去12个月均值",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "calc_rolling_zscore((sub_1-sub_2).rolling(window=3*Config.MONTH_DAYS).mean() - (sub_1-sub_2).rolling(window=Config.ANNUAL_DAYS).mean(),window=3*Config.ANNUAL_TRADING_DAYS,min_periods = 3*Config.ANNUAL_TRADING_DAYS))",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "1_mw52.72_L09"
+    },
+    {
+      "factor_id": "P006",
+      "factor": "PPI与CPI当月同比剪刀差",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "sub_1-sub_2",
+      "bar": 0,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P007",
+      "factor": "CPI同比增速-PPI同比增速（历史胜率58.33%）（CPI-PPI剪刀差）",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "average(sub_1-sub_2+sub_1.shift(1)+sub_2.shift(1))-average(sub_1.shift(2)-sub_2.shift(2)+sub_1.shift(3)-sub_2.shift(3)+sub_1.shift(4)-sub_2.shift(4))",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw49.48_L12"
+    },
+    {
+      "factor_id": "P008",
+      "factor": "PPI-CPI连续上行或下行",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "calc_rolling_zscore(sub_1-sub_2+sub_1.shift(1)-sub_2.shift(1), window = 4*config.annual_days)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "1_mw49.12_L13"
+    },
+    {
+      "factor_id": "P009",
+      "factor": "PPI-CPI加权环比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"],\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"月CPI:同比\")][\"今值\"]",
+      "condition": "data_diff(sub_1-sub_2)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw50.21_L14"
+    }
+  ]
+}

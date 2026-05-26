@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20240523_西南证券_投资策略_审时度势：趋势共振量化成长价值风格轮动策略",
+          "factor": "成长价值相对强弱指数",
+          "code": "F010",
+          "factor_id": "V131",
+          "signal_type": "state",
+          "calc_method": "沪深300收盘价 / 中证2000收盘价",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 注：研报意图为成长相对价值强弱，但calc_method写的是沪深300/中证2000\n# 沪深300偏大盘价值，中证2000偏小盘成长，比值上升=价值占优，需取反\n# 用国证成长(399370)/国证价值(399371)更贴合「成长价值相对强弱」语义\ngrowth_close = growth_index['close']  # 399370\nvalue_close  = value_index['close']   # 399371\nraw = growth_close / value_close\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "研报 calc_method 写的是「沪深300/中证2000」，但因子名为「成长价值相对强弱指数」，语义上应为成长指数/价值指数。中证2000本地缺失，改用国证成长(399370)/国证价值(399371)更符合语义且数据完整。若需严格按研报，沪深300本地有，中证2000需外部获取。方向：growth/value上升 => >0 => growth，已对齐规范。"
+        },
+        {
+          "paper_id": "20240523_西南证券_投资策略_审时度势：趋势共振量化成长价值风格轮动策略",
+          "factor": "收益率相对波动",
+          "code": "F012",
+          "factor_id": "V132",
+          "signal_type": "state",
+          "calc_method": "滚动窗口内沪深300日收益率标准差 / 滚动窗口内中证2000日收益率标准差",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 用国证成长(399370)/国证价值(399371)收益率波动率之比代替沪深300/中证2000\n# 成长波动率相对更大 => 资金博弈活跃 => 偏成长行情\ngrowth_ret = growth_close.pct_change()\nvalue_ret  = value_close.pct_change()\nwindow = 60  # 研报未明确，取60日作为默认值\nvol_growth = growth_ret.rolling(window).std()\nvol_value  = value_ret.rolling(window).std()\nraw = vol_growth / vol_value\n# 比值上升：成长波动率相对更大，暗示市场情绪偏成长\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "中证2000本地缺失，以国证成长/价值指数替代，语义更贴合成长价值分析框架。研报未给出滚动窗口，使用60日作为合理默认值。方向假设：成长相对波动率上升 => 市场交易更活跃于成长侧 => signal>0=成长，方向存在不确定性，建议回测验证。"
+        },
+        {
+          "paper_id": "20240523_西南证券_投资策略_审时度势：趋势共振量化成长价值风格轮动策略",
+          "factor": "成交额相对波动",
+          "code": "F011",
+          "factor_id": "V133",
+          "signal_type": "state",
+          "calc_method": "滚动窗口内沪深300成交额标准差 / 滚动窗口内中证2000成交额标准差",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 用国证成长(399370)/国证价值(399371)成交额波动率之比代替沪深300/中证2000\ngrowth_amount = growth_index['amount']\nvalue_amount  = value_index['amount']\nwindow = 60  # 研报未明确，取60日作为默认值\nvol_amt_growth = growth_amount.rolling(window).std()\nvol_amt_value  = value_amount.rolling(window).std()\nraw = vol_amt_growth / vol_amt_value\n# 成长成交额波动率相对更高 => 资金流动偏向成长 => signal>0\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，成交额['amount']；value_index.xlsx，日期['date']，成交额['amount']",
+          "notes": "中证2000成交额本地缺失，以国证成长/价值指数成交额替代。研报未给出滚动窗口，使用60日作为默认值。方向假设与F012一致：成长侧成交额波动更大 => signal>0=成长，建议回测验证。"
+        },
+        {
+          "paper_id": "20241102-国泰君安-风格轮动量化研究系列之一：量化视角多维度构建成长价值风格轮动策略",
+          "factor": "超买超卖因子",
+          "code": "F014",
+          "factor_id": "V134",
+          "signal_type": "state",
+          "calc_method": "全市场超买个股占比-超卖个股占比，使用5日和250日均线判断趋势",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 以RSI近似超买超卖判断（个股级RSI不可得时，用成长/价值指数RSI代理）\n# 方案A：用 growth_index RSI5D 与 value_index RSI5D 差值作为代理\ngrowth_rsi = growth_index['RSI_5D']\nvalue_rsi  = value_index['RSI_5D']\nraw_diff = growth_rsi - value_rsi\n# 5日均线与250日均线趋势判断，保留连续差值而非离散化\nshort_ma = raw_diff.rolling(5).mean()\nlong_ma  = raw_diff.rolling(250).mean()\n# 短均线超过长均线 => 成长侧超买强于价值侧 => growth信号\nfactor = short_ma - long_ma",
+          "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，RSI_5D['RSI_5D']；value_index.xlsx，日期['date']，RSI_5D['RSI_5D']",
+          "notes": "研报原文需要全市场个股超买超卖状态（个股RSI或均线判断），个股级数据计算成本高且依赖完整行情库。本实现以国证成长/价值指数的RSI5D差值作为简化代理，用5日与250日均线差值作为连续信号强度，规避离散化。若需严格实现：个股数据可从 A_data/data/Daily/mktP.parquet 的收盘价[Adjprcwd]计算RSI，再按成长/价值成分股分组统计超买超卖占比。"
+        },
+        {
+          "paper_id": "20241102-国泰君安-风格轮动量化研究系列之一：量化视角多维度构建成长价值风格轮动策略",
+          "factor": "上行趋势因子",
+          "code": "F015",
+          "factor_id": "V135",
+          "signal_type": "state",
+          "calc_method": "全市场位于月度均线上方个股占比，使用5日和250日均线判断趋势",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 逐日计算全市场个股收盘价是否位于20日均线上方\nma20 = close.rolling(20).mean()\nratio_above_ma20 = (close > ma20).groupby('Trddt').mean()\n# 短均线 - 长均线作为连续因子，正值=趋势向上=成长\nraw = ratio_above_ma20.rolling(5).mean() - ratio_above_ma20.rolling(250).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/Daily/mktP.parquet（个股收盘价，全市场）",
+          "data_field": "mktP.parquet，股票代码['Stkcd']，交易日期['Trddt']，复权收盘价['Adjprcwd']；基于个股收盘价计算20日均线（月度均线近似），统计每日位于均线上方的个股占比，再对该占比序列做5日与250日移动平均之差",
+          "notes": "研报原文使用月度均线，本地数据为日频，以20日均线近似月度均线。mktP.parquet 含全市场个股收盘价，可直接计算每日占比。方向：短均线>长均线 => 趋势向上 => growth，与规范一致，无需翻转。"
+        }
+      ]
+    }
+  }
+}

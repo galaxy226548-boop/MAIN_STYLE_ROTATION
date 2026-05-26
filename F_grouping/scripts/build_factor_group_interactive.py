@@ -180,6 +180,10 @@ def load_inventory_factor_index(
 
         relative_path = str(row.get("relative_path", "")).strip() or file_name
         path = input_dir / relative_path
+        if not path.exists():
+            warnings.append(f"Inventory entry points to a missing file and will be ignored: {path}")
+            continue
+
         columns = parse_inventory_columns(row.get("first_raw_values"))
         rows.append(
             {

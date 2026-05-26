@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20240225-广发证券-分化度视角风格轮动策略系列（二）：观市场结构变化，察风格轮动规律",
+          "factor": "成交量调整分化度 VADI_t",
+          "code": "F002",
+          "factor_id": "V126",
+          "signal_type": "state",
+          "calc_method": "VADI_t = DI_t × (M × 当月成交量 / 近M期平均成交量)，M为参数",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# VADI_t = DI_t * (M * vol_t / vol_t.rolling(M).mean())\n# M 研报未明确，参考常见设定取 M=12（月）\n# sub_vol = 全市场当月总成交量（个股成交量加总）\n# F001 = DI_t（已计算）\nM = 12\nvol_ratio = M * sub_vol / sub_vol.rolling(M).mean()\nraw = F001 * vol_ratio  # VADI，>0成长（高分化+高放量=>成长动能强）\nfactor = calc_rolling_zscore(raw, window=120)",
+          "docu": "A_data/data/Daily/mktP.parquet（计算DI及个股成交量）；成长价值成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet",
+          "data_field": "mktP.parquet，股票代码['Stkcd']，日期['Trddt']，日收益率['Dretwd']，成交额['Dnvaltrd']，成交量['Dnshrtrd']",
+          "notes": "M取值研报未明确，此处默认M=12（月），可根据实证调整。个股成交量可用mktP.parquet中Dnshrtrd（换手率）×流通市值代理，或直接用Dnvaltrd（成交额）作为成交量代理指标（量纲一致即可）。VADI依赖DI（V125/F001）的计算结果，两者需串联计算。原notes提示本地个股成交量数据源不明确，建议优先使用Dnvaltrd成交额作为成交量代理。"
+        },
+        {
+          "paper_id": "20240422_海通证券_投资策略_大类资产与中观配置研究（一）：宏观+量价成长价值双驱轮动策略",
+          "factor": "狭义风格拥挤度季均差分",
+          "code": "F007",
+          "factor_id": "V127",
+          "signal_type": "state",
+          "calc_method": "近一季沪深300日波动率/中证1000日波动率的均值，减去上一季均值",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 从收盘价计算滚动21日波动率\nhs300_ret = hs300_close.pct_change()\nzz1000_ret = zz1000_close.pct_change()\nvol_hs300 = hs300_ret.rolling(21).std()\nvol_zz1000 = zz1000_ret.rolling(21).std()\nratio = vol_hs300 / vol_zz1000\n# 近一季（63日）均值 vs 上一季均值\nq_mean_cur  = ratio.rolling(63).mean()\nq_mean_prev = ratio.rolling(63).mean().shift(63)\nraw = q_mean_cur - q_mean_prev\n# signal_rule原文 <0 => value, >0 => growth，方向已对齐\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "沪深300收盘价：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证1000收盘价：A_data/data/style_indexes/中证1000(000852.SH)-历史价格.xlsx",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；中证1000(000852.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "研报方向：季均差分 >0 表示大盘波动率相对小盘上升，意味着资金拥挤成长（小盘），信号 >0 => growth，与规范一致，无需翻转。ALL_ASSETS.xlsx 仅含 399370/399371 两个指数，不含000300/000852，故改用各自独立 xlsx 文件。"
+        },
+        {
+          "paper_id": "20240422_海通证券_投资策略_大类资产与中观配置研究（一）：宏观+量价成长价值双驱轮动策略",
+          "factor": "广义价值拥挤度季末均值变化",
+          "code": "F005",
+          "factor_id": "V128",
+          "signal_type": "state",
+          "calc_method": "近一季广义价值拥挤度月末均值减去过去三季广义价值拥挤度月末均值；广义价值拥挤度=偏股基金指数近一季日波动率/万得全A近一季日波动率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 广义价值拥挤度 = 偏股基金指数波动率 / 万得全A波动率\nbias_ret  = bias_fund_close.pct_change()\nwinda_ret = winda_close.pct_change()\nvol_bias  = bias_ret.rolling(63).std()\nvol_winda = winda_ret.rolling(63).std()\ncrowd = vol_bias / vol_winda\n# 取月末值后，近一季(3个月)均值 vs 过去三季(9个月)均值\ncrowd_eom = crowd.resample('ME').last()\nq1_mean = crowd_eom.rolling(3).mean()\nq3_mean = crowd_eom.rolling(9).mean()\nraw = q1_mean - q3_mean\n# 原始方向: <0 => value, >0 => growth，已对齐，无需翻转\nfactor = calc_rolling_zscore(raw, window=36)  # 月频，36个月≈3年",
+          "docu": "偏股基金指数：A_data/data/style_indexes/偏股基金(930950.CSI)-历史价格.xlsx；万得全A：A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "偏股基金(930950.CSI)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；8841388.WI_windallA.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "本地已存在偏股基金指数(930950.CSI)和万得全A(8841388.WI)数据，可替代研报所提「偏股基金指数」和「万得全A」。研报原文使用「广义价值拥挤度」，方向 >0 意味拥挤在价值侧，原始 signal_rule 为 <0 => growth，与本项目规范相反，已在 condition 中通过 q1_mean - q3_mean（差值上升=>成长方向）对齐，注意逻辑：拥挤度上升=>价值拥挤度上升=>资金流向成长。"
+        },
+        {
+          "paper_id": "20240515-广发证券-分化度视角风格轮动策略系列（三）：基于多维度观察的风格轮动研究",
+          "factor": "指数分化度",
+          "code": "F001",
+          "factor_id": "V129",
+          "signal_type": "state",
+          "calc_method": "每周计算主流宽基指数收益率的截面标准差",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 主流宽基指数周收益率截面标准差\n# 使用本地可用宽基：000300(沪深300), 000852(中证1000), 000985(中证全指), 399006(创业板指)\nindices = ['000300', '000852', '000985', '399006']\nprice_df = ...  # 各指数收盘价拼接为 DataFrame，列为指数代码，行为日期\nweekly_ret = price_df.resample('W').last().pct_change()\ndivergence = weekly_ret.std(axis=1)  # 截面标准差（每周）\n# 分化度本身无方向，研报以分化度突破为风格反转的前置条件。\n# 此处用 zscore 偏离中位水平作为强度代理，高分化度 => 趋势延续（成长相对优势延续），取正\nraw = divergence\nfactor = calc_rolling_zscore(raw, window=104)  # 周频，104周≈2年",
+          "docu": "沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证1000：A_data/data/style_indexes/中证1000(000852.SH)-历史价格.xlsx；中证全指：A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx；创业板指：A_data/data/style_indexes/创业板指(399006.SZ)-历史价格.xlsx",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；中证1000(000852.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；创业板指(399006.SZ)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "研报原文信号方向不明确（signal_rule=unknown），分化度本身为对称指标，高值意味着市场风格差异大，不直接对应成长/价值。此处假设分化度高时成长相对优势更显著（基于研报描述分化度上升常伴随成长行情），保留 zscore 作为连续强度，下游可根据回测结果翻转方向（乘以-1）。缺少中证2000数据，以现有四个宽基替代。"
+        },
+        {
+          "paper_id": "20240515-广发证券-分化度视角风格轮动策略系列（三）：基于多维度观察的风格轮动研究",
+          "factor": "头部拥挤度",
+          "code": "F002",
+          "factor_id": "V130",
+          "signal_type": "state",
+          "calc_method": "对于头部风格指数，计算近1周成交量在历史N%分位数，若超过阈值则标记为拥挤",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 头部拥挤度：以国证成长/价值的成交额滚动分位数差值作为连续代理\ngrowth_amount = growth_index_amount  # 国证成长(399370)周成交额\nvalue_amount  = value_index_amount   # 国证价值(399371)周成交额\n# 历史分位数（避免稀疏二值化）\nN = 52  # 1年滚动窗口（周频）\ngrowth_qrank = growth_amount.rolling(N).rank(pct=True)\nvalue_qrank  = value_amount.rolling(N).rank(pct=True)\n# 差值：成长侧分位数高于价值侧 => 成长拥挤 => signal>0（成长拥挤时短期反转或延续取决于研报逻辑）\n# 研报用于反转判断，拥挤的一侧可能反转，故此处取价值-成长（拥挤成长时为负，代表价值将占优）\n# signal_rule unknown，此处保持 growth_qrank - value_qrank（>0表明成长当前更热）\nraw = growth_qrank - value_qrank\nfactor = calc_rolling_zscore(raw, window=104)",
+          "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，成交额['amount']；value_index.xlsx，日期['date']，成交额['amount']",
+          "notes": "研报原文信号方向不明确，拥挤度本身是反转信号前置条件。本实现以成长vs价值侧成交额滚动分位数之差作为连续因子（>0表示成长侧更拥挤），方向存在不确定性，建议回测验证后决定是否乘以-1。参数N=52（周频1年）为合理默认值，研报未明确。"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20241216-国金证券-跟踪资金流系列专题（二）：海外ETF资金流因子影响下的行业风格轮动策略，当前环境下如何日频跟踪外资聪明钱？",
+          "factor": "过去20日夏普比率",
+          "code": "F010",
+          "factor_id": "V086",
+          "signal_type": "state",
+          "calc_method": "过去20日年化夏普比率 = (过去20日平均收益 / 过去20日标准差) * sqrt(252)",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "import numpy as np\nclose_g = index_eod.loc[index_eod['Indexcd'] == '399370', 'Idxtrd05'].ffill()\nclose_v = index_eod.loc[index_eod['Indexcd'] == '399371', 'Idxtrd05'].ffill()\nret_g = close_g.pct_change()\nret_v = close_v.pct_change()\nsharpe_g = ret_g.rolling(20).mean() / ret_g.rolling(20).std() * np.sqrt(252)\nsharpe_v = ret_v.rolling(20).mean() / ret_v.rolling(20).std() * np.sqrt(252)\nraw = sharpe_g - sharpe_v\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=399370 国证成长；Indexcd=399371 国证价值）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='399370'和'399371'，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "研报为行业层面动量因子，IC为正。此处以国证成长vs国证价值过去20日年化夏普比率之差代替，正值代表成长风险调整后收益更优。"
+        },
+        {
+          "paper_id": "20090604-国泰君安-基于中国股市经验的两个行业与风格轮动规律",
+          "factor": "巨潮价值-成长相对涨幅",
+          "code": "F004",
+          "factor_id": "V087",
+          "signal_type": "state",
+          "calc_method": "巨潮成长指数近N日涨跌幅 / 巨潮价值指数近N日涨跌幅 (窗口N未明确，可能为6个月)",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1=国证成长(399370)收盘价，sub_2=国证价值(399371)收盘价，用作巨潮成长/价值替代\n# 研报原始方向：成长涨幅/价值涨幅 >1 => 成长强；此处转为差值形式，>0 => growth\nwindow_N = 126  # 约6个月交易日\ngrowth_ret = sub_1.pct_change(window_N)\nvalue_ret  = sub_2.pct_change(window_N)\nraw = growth_ret - value_ret\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx（399370）；价值指数：A_data/data/style_indexes/value_index.xlsx（399371）",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "本地无独立巨潮成长/价值指数，以国证成长(399370)/国证价值(399371)替代。窗口N未明确，取126交易日（约6个月）。原始研报计算为涨跌幅之比，此处改为差值形式以保持方向一致性（成长涨幅更大 => factor>0 => 建议成长仓位）。"
+        },
+        {
+          "paper_id": "20100111-安信证券-四维视角下的成长价值风格轮动",
+          "factor": "前三个月累计小价值回报率之差",
+          "code": "F002",
+          "factor_id": "V088",
+          "signal_type": "state",
+          "calc_method": "过去三个月成长指数累计收益率 - 过去三个月价值指数累计收益率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1=成长指数过去63日累计收益，sub_2=价值指数过去63日累计收益\n# 研报原始信号：>0 => value（动量反转），此处乘以-1翻转方向\ngrowth_ret_3m = sub_1.pct_change(63)\nvalue_ret_3m  = sub_2.pct_change(63)\nraw = (growth_ret_3m - value_ret_3m) * (-1)\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx（399370）；价值指数：A_data/data/style_indexes/value_index.xlsx（399371）",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "研报原始信号方向：成长近3月累计收益 - 价值近3月累计收益 >0 => 持有价值（动量反转逻辑），与规范方向相反，故乘以-1翻转。3个月取63交易日。本地无独立申万成长/价值指数，以国证成长(399370)/国证价值(399371)替代。"
+        },
+        {
+          "paper_id": "20100510-长城证券-量化投资系列之四：成长价值风格轮动的标识",
+          "factor": "成长价值指数相对强弱指标",
+          "code": "F002",
+          "factor_id": "V089",
+          "signal_type": "state",
+          "calc_method": "利用相对收益的对数形式定义。推测为累积成长指数对数收益率 - 累积价值指数对数收益率，或 ln(成长指数收盘价/价值指数收盘价)。公式图片缺失。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1=申万成长指数日收盘价（以国证成长399370替代），sub_2=申万价值指数日收盘价（以国证价值399371替代）\n# ln(成长/价值)的累积对数相对强弱；>0表示成长累计涨幅强于价值\nlog_rs = np.log(sub_1 / sub_2)  # 等价于累计对数收益率之差\nraw = log_rs - log_rs.rolling(252).mean()  # 去趋势，保留偏离程度\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx（399370）；价值指数：A_data/data/style_indexes/value_index.xlsx（399371）",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "本地无申万成长/价值指数日行情，以国证成长(399370)/国证价值(399371)替代。原始公式图片缺失，采用ln(成长/价值)作为相对强弱标准实现。交易信号通过均线穿越产生，此处保留连续值由下游决策。"
+        },
+        {
+          "paper_id": "20100510-长城证券-量化投资系列之四：成长价值风格轮动的标识",
+          "factor": "成长价值资金相对强弱指标",
+          "code": "F001",
+          "factor_id": "V090",
+          "signal_type": "state",
+          "calc_method": "申万成长指数日成交额 ÷ 申万价值指数日成交额（具体公式图片缺失，可能取对数处理）",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1=成长指数日成交额，sub_2=价值指数日成交额\n# 从index_eod.parquet中筛选399370和399371的Idxtrd07(成交金额)\ngrowth_amt = sub_1  # index_eod中Indexcd==399370的Idxtrd07\nvalue_amt  = sub_2  # index_eod中Indexcd==399371的Idxtrd07\nlog_amt_rs = np.log(growth_amt / value_amt)\nraw = log_amt_rs - log_amt_rs.rolling(252).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=399370成长 / Indexcd=399371价值）",
+          "data_field": "index_eod.parquet中筛选Indexcd==399370和399371，日期['Idxtrd01']，成交金额['Idxtrd07']",
+          "notes": "本地无申万成长/价值指数成交额，以国证成长(399370)/国证价值(399371)替代。原始公式图片缺失，采用log(成长成交额/价值成交额)去趋势实现。利用量为价先原理：成长资金占优 => factor>0 => 建议成长仓位。"
+        }
+      ]
+    }
+  }
+}

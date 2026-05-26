@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20190801-中泰证券-中泰时钟战术资产配置系列之三：成长价值风格轮动",
+          "factor": "相对赚钱效应",
+          "code": "F006",
+          "factor_id": "V121",
+          "signal_type": "state",
+          "calc_method": "中证500过去100%换手筹码当前收益率 - 沪深300对应收益率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 100%换手筹码成本近似：过去N日最大换手累计对应的均价作为成本价\n# 简化代理：中证500近期涨跌幅 - 沪深300近期涨跌幅（相对超额收益）\n# sub_1 = 中证500收盘价序列，sub_2 = 沪深300收盘价序列\nret_500 = sub_1.pct_change(20)   # 近20日收益率作代理\nret_300 = sub_2.pct_change(20)\nraw = ret_500 - ret_300\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "中证500日频行情：A_data/data/index_eod.parquet（Indexcd=000905）；沪深300日频行情：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx",
+          "data_field": "index_eod.parquet 中筛选 Indexcd==000905，日期['Idxtrd01']，收盘价['Idxtrd05']；沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "原研报需要「100%换手筹码」数据，计算成本极高且本地无现成字段。此处以中证500 vs 沪深300的近期相对超额收益作合理代理（中证500偏成长/小盘，沪深300偏价值/大盘）；方向与研报一致（500跑赢=>成长占优=>正值）。notes原文提示效果不佳，下游可降权处理。"
+        },
+        {
+          "paper_id": "20211223-方正证券-宏观视角下景气度+趋势的行业轮动策略",
+          "factor": "综合拥挤度因子",
+          "code": "F002",
+          "factor_id": "V122",
+          "signal_type": "state",
+          "calc_method": "将1个月偏度、1个月峰度、12个月波动率因子等权合成。偏度和峰度基于日内最高价与最低价衍生的收益率计算，波动率为行业指数收益率的波动率。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = 1个月偏度（基于日内高低价衍生收益率），sub_2 = 1个月峰度，sub_3 = 12个月波动率\n# 拥挤度越高 => 预期未来收益越低（负向因子），乘以-1翻转为正值代表成长\nsub1_z = calc_rolling_zscore(sub_1, window=504)\nsub2_z = calc_rolling_zscore(sub_2, window=504)\nsub3_z = calc_rolling_zscore(sub_3, window=504)\nraw = (sub1_z + sub2_z + sub3_z) / 3\nfactor = raw * (-1)  # 拥挤度高=>value/负向，翻转后>0表示低拥挤=>成长占优",
+          "docu": "行业指数日频行情（含开高低收）：A_data/data/style_indexes/D_中信行业指数+恒生指数_CN_041231_260320.xlsx；个股日频价格（备选，用于计算行业内个股偏峰度）：A_data/data/Daily/mktP.parquet",
+          "data_field": "D_中信行业指数+恒生指数_CN_041231_260320.xlsx，日期['指标名称'行首]，各行业指数收盘价（用于波动率）；mktP.parquet，股票代码['Stkcd']，日期['Trddt']，日收益率['Dretwd']，收盘价['Adjprcwd']（用于偏度/峰度计算）",
+          "notes": "方向原为unknown，根据研报逻辑「拥挤度高=>预期收益低」判断为负向因子，已乘以-1翻转，notes补充说明。行业级别因子此处以成长行业（如电子、计算机、电力设备）vs 价值行业综合拥挤度差值使用效果更好；本实现简化为全市场综合拥挤度代理。偏度、峰度计算使用个股截面月度数据，可从mktP.parquet的Dretwd字段按月汇总。"
+        },
+        {
+          "paper_id": "20220606-申万宏源-短中长三维度升级申万风格轮动模型",
+          "factor": "成长成长多空能量信号",
+          "code": "F011",
+          "factor_id": "V123",
+          "signal_type": "state",
+          "calc_method": "基于成长成长指数每日开盘价、最高价、最低价的AR指标，公式被省略，需人工补充",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# AR指标标准公式：AR = sum(high-open, N) / sum(open-low, N) * 100\n# N=26日为常用周期；研报信号规则：AR>过去60日均值=>成长，AR<均值=>价值\n# 转连续值：保留AR相对均值的偏离幅度\nhigh = growth_index['high']\nlow  = growth_index['low']\nopen_ = growth_index['open']\nAR = (high - open_).rolling(26).sum() / (open_ - low).rolling(26).sum() * 100\nraw = AR - AR.rolling(60).mean()  # 偏离60日均值，>0表示能量增强=>成长\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "国证成长指数(399370)日频行情（含开高低）：A_data/data/style_indexes/growth_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，开盘价['open']，最高价['high']，最低价['low']",
+          "notes": "AR公式在原研报中为图片无法读取，此处采用技术分析标准AR公式（买方/卖方力道比）补全。研报信号规则为>60日均值=>成长，已转为连续偏离值（差值型）保留强度。growth_index.xlsx包含open/high/low字段，可直接使用。"
+        },
+        {
+          "paper_id": "20220606-申万宏源-短中长三维度升级申万风格轮动模型",
+          "factor": "沪深两市成交额相对趋势",
+          "code": "F012",
+          "factor_id": "V124",
+          "signal_type": "state",
+          "calc_method": "沪深两市日成交额（沪+深）减去其过去23日均值",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 研报原始规则：>0 => value；<0 => growth（高成交表示市场拥挤，价值防御）\n# 方向翻转：乘以-1 => >0代表低于均值=>成长\nsh_amt = sh_index['成交额(元,CNY)']\nsz_amt = sz_index['成交额(元,CNY)']\ntotal_amt = sh_amt + sz_amt\nraw = (total_amt - total_amt.rolling(23).mean()) * (-1)  # 翻转：低成交额=>正值=>成长\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "沪深300指数日频行情（代理上证成交额）：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证全指日频行情（代理深证成交额）：A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，成交额['成交额(元,CNY)']；中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']，成交额['成交额(元,CNY)']",
+          "notes": "原始signal_rule为>0=>value，已在condition中乘以-1翻转以符合规范（>0=>growth）。理想数据为沪市+深市日成交额，本地暂无纯市场成交额汇总文件；以沪深300代理上证、中证全指代理深证成交额为近似方案。如有全市场日成交额文件可直接替换。index_eod.parquet中若有对应指数的成交额字段亦可使用。"
+        },
+        {
+          "paper_id": "20240225-广发证券-分化度视角风格轮动策略系列（二）：观市场结构变化，察风格轮动规律",
+          "factor": "个股分化度 DI_t",
+          "code": "F001",
+          "factor_id": "V125",
+          "signal_type": "state",
+          "calc_method": "股票横截面月收益率标准差，剔除涨跌幅首尾各10%的个股",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# DI_t 本身无直接方向信号，用于构建 VADI（V126）\n# 若单独使用：高分化度倾向成长占优（成长股分散度更高时动量更强）\n# 月度截面：剔除涨跌幅首尾各10%后计算收益率标准差\nmonthly_ret = mktP_ret.resample('ME').sum()  # 日频Dretwd求和近似月收益\ntrimmed = monthly_ret.apply(lambda x: x[(x >= x.quantile(0.1)) & (x <= x.quantile(0.9))])\nDI = trimmed.std(axis=1)  # 横截面标准差\nraw = DI - DI.rolling(12).mean()  # 相对12个月均值偏离\nfactor = calc_rolling_zscore(raw, window=120)",
+          "docu": "A_data/data/Daily/mktP.parquet",
+          "data_field": "mktP.parquet，股票代码['Stkcd']，日期['Trddt']，日收益率（复权）['Dretwd']",
+          "notes": "DI本身无直接方向，根据研报逻辑：高分化度时市场结构分散，成长股相对价值股趋势更明显，故设定DI偏高（相对均值）为正值（成长信号）。实际应与V126(VADI)配合使用效果更佳。计算需逐月处理个股收益率截面，从mktP.parquet Dretwd字段获取，已有路径data_public/Daily/mktP/在原始记录中，统一改为本地路径A_data/data/Daily/mktP.parquet。"
+        }
+      ]
+    }
+  }
+}

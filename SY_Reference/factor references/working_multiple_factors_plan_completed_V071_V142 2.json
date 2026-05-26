@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20241102-国泰君安-风格轮动量化研究系列之一：量化视角多维度构建成长价值风格轮动策略",
+          "factor": "拥挤度因子",
+          "code": "F017",
+          "factor_id": "V136",
+          "signal_type": "state",
+          "calc_method": "成长与价值相对波动率，滚动1年95%和5%分位数作为阈值，结合相对净值5日和20日均线交叉确认信号",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 计算成长/价值日收益率\ngrowth_ret = growth_close.pct_change()\nvalue_ret = value_close.pct_change()\n# 相对波动率：成长/价值滚动60日标准差之比\nrel_vol = growth_ret.rolling(60).std() / value_ret.rolling(60).std()\n# 滚动1年分位数上下轨\nupper = rel_vol.rolling(252).quantile(0.95)\nlower = rel_vol.rolling(252).quantile(0.05)\n# 均线\nma5_close = (growth_close / value_close).rolling(5).mean()\nma20_close = (growth_close / value_close).rolling(20).mean()\n# 稀疏输出：对输入分别zscore后组合\nrel_vol_z = calc_rolling_zscore(rel_vol, window=252)\nupper_z = calc_rolling_zscore(upper, window=252)\nlower_z = calc_rolling_zscore(lower, window=252)\nma_diff_z = calc_rolling_zscore(ma5_close - ma20_close, window=252)\nfactor = pd.Series(0.0, index=rel_vol.index)\n# 价值拥挤（rel_vol极低且均线金叉）=> 偏成长\ncond_value_crowded = (rel_vol < lower) & (ma5_close > ma20_close)\nfactor[cond_value_crowded] = (lower_z - rel_vol_z)[cond_value_crowded].abs() * ma_diff_z[cond_value_crowded].abs()\n# 成长拥挤（rel_vol极高且均线死叉）=> 偏价值\ncond_growth_crowded = (rel_vol > upper) & (ma5_close < ma20_close)\nfactor[cond_growth_crowded] = -((rel_vol_z - upper_z)[cond_growth_crowded].abs() * ma_diff_z[cond_growth_crowded].abs())",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']；基于两者收盘价计算日收益率，滚动60日标准差之比为相对波动率，滚动252日分位数确定上下轨",
+          "notes": "研报使用中证2000/沪深300，但本地有国证成长(399370)/国证价值(399371)对应日频数据更合适。因子为稀疏序列（大多数时刻=0），按模板规范对输入变量分别zscore后组合，不对整体输出zscore。原始逻辑：成长拥挤=>value，价值拥挤=>growth，已内化到condition符号中。"
+        },
+        {
+          "paper_id": "20241218-海通证券-大类资产与中观配置研究（四）：宏观量价双驱价值成长风格轮动模型",
+          "factor": "中证全指成交额水平",
+          "code": "F002",
+          "factor_id": "V137",
+          "signal_type": "state",
+          "calc_method": "中证全指近一季（约63日）成交额均值与近两年（约504日）成交额均值之差",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "raw = sub_1.rolling(63).mean() - sub_1.rolling(504).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx",
+          "data_field": "中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']，成交额['成交额(元,CNY)']",
+          "notes": "原始数据字段已在待完成版中标注为'成交额(元,CNY)'，与data_inventory确认一致。差值>0代表近期成交活跃（偏成长），无需方向翻转。"
+        },
+        {
+          "paper_id": "20130225-广发证券-风格轮动系列专题之二：宏观事件驱动下的风格轮动",
+          "factor": "月份效应：6月份事件",
+          "code": "F012",
+          "factor_id": "V138",
+          "signal_type": "event",
+          "calc_method": "每年6月份触发该事件",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 6月份触发价值信号，连续化处理：触发月输出负值（偏离0的幅度），其余月份=0\n# 用距月末剩余交易日占比作为强度衰减\ndays_in_month = sub_1.index.days_in_month\nday_of_month = sub_1.index.day\nprogress = day_of_month / days_in_month  # 月内进度 0~1\nfactor = pd.Series(0.0, index=sub_1.index)\nis_june = (sub_1.index.month == 6)\n# 6月份方向为价值 => 输出负值；强度随月内进度线性变化\nfactor[is_june] = -(progress[is_june])",
+          "docu": "无需外部数据文件，直接使用 pandas DatetimeIndex 的日历信息",
+          "data_field": "日历因子，无需数据文件；sub_1 为任意带日期索引的序列（可用中证全指收盘价作为时间轴载体）：A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']",
+          "notes": "日历事件型因子，研报方向为'价值蓝筹'即 =>value，在condition中输出负值实现规范对齐。强度以月内进度线性衰减（月初幅度小、月末幅度大），无信号月份保持0，符合稀疏序列规范，无需对整体做zscore。"
+        },
+        {
+          "paper_id": "20130225-广发证券-风格轮动系列专题之二：宏观事件驱动下的风格轮动",
+          "factor": "月份效应：12月份事件",
+          "code": "F013",
+          "factor_id": "V139",
+          "signal_type": "event",
+          "calc_method": "每年12月份触发该事件",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 12月份触发价值信号，连续化处理同F012\ndays_in_month = sub_1.index.days_in_month\nday_of_month = sub_1.index.day\nprogress = day_of_month / days_in_month\nfactor = pd.Series(0.0, index=sub_1.index)\nis_dec = (sub_1.index.month == 12)\n# 12月份方向为价值 => 输出负值\nfactor[is_dec] = -(progress[is_dec])",
+          "docu": "无需外部数据文件，直接使用 pandas DatetimeIndex 的日历信息",
+          "data_field": "日历因子，无需数据文件；sub_1 为任意带日期索引的序列（可用中证全指收盘价作为时间轴载体）：A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']",
+          "notes": "日历事件型因子，研报方向为'价值蓝筹'即 =>value，在condition中输出负值实现规范对齐。处理方式同F012（V138）。"
+        },
+        {
+          "paper_id": "20130704-海通证券-华夏上证行业ETF风格轮动策略之一：利用债券YTM打造行业风格导航仪",
+          "factor": "上证行业市盈率（月末值）",
+          "code": "F007",
+          "factor_id": "V140",
+          "signal_type": "state",
+          "calc_method": "各行业月末市盈率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 取月末值（resample到月末）\nsub_pe = sub_1.resample('ME').last()\n# 原始值作为因子，方向由SVM/模型自动学习\nfactor = sub_pe",
+          "docu": "本地无上证行业ETF分行业PE专用文件；近似替代：A_data/data/style_indexes/D_中信行业指数+恒生指数_CN_041231_260320.xlsx（中信行业指数价格，可通过Astockdaily.parquet的行业PE字段替代）；行业PE数据：A_data/data/Daily/个股日交易衍生指标134252198/STK_MKT_DALYR.xlsx（含PE字段，需按行业聚合）",
+          "data_field": "STK_MKT_DALYR.xlsx，交易日期['TradingDate']，股票代码['Symbol']，市盈率['PE']；按研报所指五个行业（金融、材料、能源、医药、消费）筛选成分股后取月末均值；如使用中信行业指数则：D_中信行业指数+恒生指数_CN_041231_260320.xlsx，银行['中信行业指数:银行']、基础化工['中信行业指数:基础化工']、石油石化['中信行业指数:石油石化']、医药['中信行业指数:医药']、食品饮料['中信行业指数:食品饮料']",
+          "notes": "研报基于华夏上证行业ETF（金融、材料、能源、医药、消费五类），本地无对应行业PE时序文件。近似方案：①STK_MKT_DALYR.xlsx含个股PE，按行业分类聚合取均值；②中信行业指数价格可用于计算行业相对强弱但不含PE。signal_rule为unknown，sub_pe作为原始连续值交由下游模型学习，暂不做方向假设。"
+        }
+      ]
+    }
+  }
+}

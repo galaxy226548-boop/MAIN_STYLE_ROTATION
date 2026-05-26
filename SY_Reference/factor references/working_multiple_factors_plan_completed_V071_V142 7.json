@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20180314-申万宏源-风格轮动与行业配置",
+          "factor": "风格相对强弱二阶导数",
+          "code": "F003",
+          "factor_id": "V111",
+          "signal_type": "state",
+          "calc_method": "对一阶导数序列再进行移动窗口线性回归，取斜率作为二阶导数替代。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 第一步：计算成长/价值相对强弱比率\ngrowth_close = growth_index['close']\nvalue_close  = value_index['close']\nratio = growth_close / value_close\n\n# 第二步：一阶导数（移动窗口线性回归斜率）\nslope_series = ratio.rolling(window=window_w1).apply(\n    lambda x: np.polyfit(np.arange(len(x)), x, 1)[0], raw=True\n)\n\n# 第三步：二阶导数（对一阶导数序列再做移动窗口线性回归）\nraw = slope_series.rolling(window=window_w2).apply(\n    lambda x: np.polyfit(np.arange(len(x)), x, 1)[0], raw=True\n)\n# >0 加速向成长，<0 加速向价值，直接输出无需翻转\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "回归窗口 window_w1、window_w2 研报未明确，建议参数探索范围 w1=20~60，w2=10~30。二阶导数 >0 表示成长相对动量在加速，符合 >0 => growth 规范。"
+        },
+        {
+          "paper_id": "20190108-广发证券-多因子Alpha系列报告之（三十八）：从个股分化看风格轮动",
+          "factor": "个股分化度MADI（成交量修正分化度）",
+          "code": "F001",
+          "factor_id": "V112",
+          "signal_type": "state",
+          "calc_method": "先计算股票池月收益率标准差作为分化度DI，剔除涨跌幅首尾各10%个股，剩余80%个股的收益率标准差乘以相对成交量（个股当月成交量 / 过去12个月成交量均值）得到MADI",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# MADI 高 => 个股分化程度高 => 对应反转策略（价值）；MADI 低 => 趋势策略（成长）\n# 故原始方向与规范相反，乘以 -1 翻转\n\n# 个股月收益率（Ret）与月成交额（Amount）取自 Astockdaily.parquet\nmonthly_ret    = Ret.resample('M').sum()            # 月累计收益\nmonthly_amount = Amount.resample('M').sum()          # 月成交额\n\n# 剔除首尾 10%，计算修正分化度\ntrimmed_ret = monthly_ret.apply(\n    lambda x: x[(x >= x.quantile(0.1)) & (x <= x.quantile(0.9))]\n)\ntrimmed_DI = trimmed_ret.std(axis=1)\n\n# 相对成交量：个股当月成交量 / 过去12月均值\nrel_vol = monthly_amount.div(monthly_amount.rolling(12).mean())\n# 市值加权平均相对成交量（截面均值）\navg_rel_vol = rel_vol.mean(axis=1)\n\nraw  = trimmed_DI * avg_rel_vol      # MADI\n# MADI 高 => 价值，翻转后 >0 => growth\nfactor = calc_rolling_zscore(raw, window=60) * (-1)",
+          "docu": "个股日频行情：A_data/prepared_data/Astockdaily.parquet",
+          "data_field": "Astockdaily.parquet，交易日期['TradingDate']，股票代码['Symbol']，日收益率['Ret']，成交额['Amount']",
+          "notes": "原始因子方向：MADI 高 => 分化严重 => 反转策略（价值）；MADI 低 => 趋势（成长）。condition 已乘以 -1 对齐规范。月频计算需先按 Symbol 分组再按月 resample，rel_vol 取截面均值作为近似；研报方向不适合直接套用 >0 => growth，已在 notes 说明翻转原因。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "成长价值日历效应月份因子",
+          "code": "F001",
+          "factor_id": "V113",
+          "signal_type": "event",
+          "calc_method": "根据历史统计，2/3/8/9/10月成长风格较强，4/6/12月价值风格较强，其余月份中性（1/5/7/11月方向不稳定）",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 事件型因子：用历史胜率偏差作为连续强度替代\n# 研报全样本(2005-2018)中各月成长超额收益均值作为权重\n# 此处用固定偏差值编码历史均值方向与强度（需实际拟合后替换）\nmonth = pd.to_datetime(date_index).month\n\n# 使用稀疏输出规范：对输入变量分别 zscore 后组合\n# 以成长/价值收益差序列对月份分组计算均值作为强度\ngrowth_ret = growth_close.pct_change()\nvalue_ret  = value_close.pct_change()\nret_diff   = growth_ret - value_ret            # 日频成长超额\nmonthly_diff = ret_diff.resample('M').sum()    # 月度成长超额\n\n# 按月份统计历史胜率偏差（expanding 模拟实时可知信息）\nmonth_label = monthly_diff.index.month\nmonth_strength = monthly_diff.groupby(month_label).expanding().mean().droplevel(0)\n\n# 当月所属月份对应的历史均值作为因子强度\nfactor = month_strength.reindex(monthly_diff.index)\n# 中性月份（1/5/7/11）方向不稳定，输出接近 0，无需手工截断",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "原 condition 已有月份规则，此处改为连续强度版本：用该月份历史成长超额均值作为因子值，保留方向与程度信息。2/3/8/9/10 月均值为正，4/6/12 月为负，1/5/7/11 月接近 0，符合规范。月频因子，下游使用时注意对齐频率。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "MOM_RSRSrsq因子比率（成长/价值）",
+          "code": "F010",
+          "factor_id": "V114",
+          "signal_type": "state",
+          "calc_method": "主力支撑相对强弱(RSRS)的拟合优度，成分股合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# RSRS 拟合优度：以 N 日高低价做 OLS 回归，取 R²\n# 成分股合成：取成长/价值指数成分股的等权 R² 均值后作比率\n\n# 个股日频高低价\nhigh = S_DQ_ADJHIGH   # 宽表：index=TRADE_DT, columns=stock_code\nlow  = S_DQ_ADJLOW\n\ndef rsrs_rsq(high_ser, low_ser, window=18):\n    \"\"\"滚动计算 RSRS R²\"\"\"\n    rsq = pd.Series(index=high_ser.index, dtype=float)\n    for i in range(window, len(high_ser)):\n        y = high_ser.iloc[i-window:i].values\n        x = low_ser.iloc[i-window:i].values\n        _, _, r, _, _ = scipy.stats.linregress(x, y)\n        rsq.iloc[i] = r ** 2\n    return rsq\n\n# 对每只股票计算 RSRSrsq\nrsq_all = high.apply(lambda col: rsrs_rsq(col, low[col.name]))\n\n# 成长成分股（399370）等权平均\ngrowth_comps = AIndexHS300FreeWeight[AIndexHS300FreeWeight['S_INFO_WINDCODE']=='399370.SZ']['S_CON_WINDCODE']\nsub_1 = rsq_all[growth_comps].mean(axis=1)\n\n# 价值成分股（399371）等权平均\nvalue_comps = AIndexHS300FreeWeight[AIndexHS300FreeWeight['S_INFO_WINDCODE']=='399371.SZ']['S_CON_WINDCODE']\nsub_2 = rsq_all[value_comps].mean(axis=1)\n\nraw    = sub_1 / sub_2   # >1 成长RSRS拟合优度更高 => 成长\nfactor = calc_rolling_zscore(raw - 1, window=504)",
+          "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet（需另取高低价，或从 Astockdaily.parquet 计算）",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']（399370.SZ/399371.SZ），成分股代码['S_CON_WINDCODE']，日期['TRADE_DT']；S_DQ_ADJCLOSE.parquet，日期['TRADE_DT']，个股收盘价[股票代码列]；Astockdaily.parquet 可补充个股日内高低价（如有）",
+          "notes": "本地数据无独立高低价宽表，建议从 Astockdaily.parquet（字段 ChangeRatio/Amount 等）确认是否含高低价；若无，可用个股收盘价近似（以相邻两日收盘价代替高低价，精度有损）。RSRS 窗口默认 18 日（研报常用）。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "上证50成分股横截面相关系数CORRapx",
+          "code": "F011",
+          "factor_id": "V115",
+          "signal_type": "state",
+          "calc_method": "计算上证50指数成分股日收益率的横截面平均相关系数",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 上证50成分股（000016.SH）日收益率横截面平均相关系数\n# 相关系数高 => 个股高度同涨同跌 => 系统性风险主导 => 价值风格占优\n# 故原始方向与规范相反，乘以 -1\n\n# 取上证50成分股\nsh50_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '000016.SH'\n]['S_CON_WINDCODE'].unique()\n\n# 个股日收益率（宽表）\nret_wide = S_DQ_ADJCLOSE[sh50_comps].pct_change()\n\n# 滚动截面平均相关系数（20日窗口）\ndef mean_cross_corr(ret_df, window=20):\n    result = []\n    for i in range(window, len(ret_df)):\n        sub = ret_df.iloc[i-window:i].dropna(axis=1, how='any')\n        corr_mat = sub.corr()\n        n = corr_mat.shape[0]\n        # 取上三角均值（排除对角线）\n        upper = corr_mat.values[np.triu_indices(n, k=1)]\n        result.append(upper.mean() if len(upper) > 0 else np.nan)\n    idx = ret_df.index[window:]\n    return pd.Series(result, index=idx)\n\nraw    = mean_cross_corr(ret_wide, window=20)\n# 相关系数高 => 价值，翻转\nfactor = calc_rolling_zscore(raw, window=504) * (-1)",
+          "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet（需含上证50成分，代码 000016.SH）；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']（000016.SH），成分股代码['S_CON_WINDCODE']，日期['TRADE_DT']；S_DQ_ADJCLOSE.parquet，日期['TRADE_DT']，个股收盘价[股票代码列]",
+          "notes": "注意：AIndexHS300FreeWeight 文件描述注明仅含 399370/399371 数据，上证50（000016）成分是否存在需确认；若无，需另行获取上证50成分股列表。相关系数高 => 系统性行情 => 价值占优，condition 已乘以 -1 翻转。"
+        }
+      ]
+    }
+  }
+}

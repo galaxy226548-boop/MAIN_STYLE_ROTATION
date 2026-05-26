@@ -1,0 +1,408 @@
+{
+  "signal_type": "state",
+  "batch_index": 1,
+  "total_batches": 5,
+  "record_count": 40,
+  "records": [
+    {
+      "factor_id": "V004",
+      "factor": "成长/价值动量",
+      "signal_type": "state",
+      "docu": "风格间过去1月动量差（风格历史1个月涨跌幅之差）（一个月涨跌幅）",
+      "condition": null,
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw51.77_zzqz_turnover_ratio_1m"
+    },
+    {
+      "factor_id": "G071",
+      "factor": "中长期贷款余额同比",
+      "signal_type": "state",
+      "docu": "data_public/月度/DebtData.xlsx",
+      "condition": "sub_1 - sub_1.rolling(window=3).mean()",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V002",
+      "factor": "动量",
+      "signal_type": "state",
+      "docu": "data_public/style_indexes/growth_index.xlsx, data_public/style_indexes/value_index.xlsx",
+      "condition": "calc_rolling_return(growth_price, window=4, return_type=Config.RETURN_TYPE) - calc_rolling_return(value_price, window=4, return_type=Config.RETURN_TYPE)",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V018",
+      "factor": "PB_MAD",
+      "signal_type": "state",
+      "docu": null,
+      "condition": null,
+      "bar": null,
+      "ret_bar": null,
+      "result": "2_mw48.65_ZHAO04"
+    },
+    {
+      "factor_id": "I005",
+      "factor": "3个月SHIBOR利率",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_21-24_shibor+7天同业利率_CN_020131_260327.xlsx\"[\"Shibor:3月\"]",
+      "condition": "z_MA_div(sub_1, 5, 250, 252)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw49.48_L75"
+    },
+    {
+      "factor_id": "I006",
+      "factor": "SHIBOR利率",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_21-24_shibor+7天同业利率_CN_020131_260327.xlsx\"[\"Shibor:1月\"]",
+      "condition": "z_MA_div(sub_1, 5, 250, 252)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw47.92_L76"
+    },
+    {
+      "factor_id": "I007",
+      "factor": "SHIBOR利率近五日均值在过去三年中的百分位",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_21-24_shibor+7天同业利率_CN_020131_260327.xlsx\"[\"Shibor:1月\"]",
+      "condition": "if((_rolling_quantile_rank_year(MA(sub_1,5), 3)>0.75),_rolling_quantile_rank_year(MA(sub_1,5), 3)-0.75,if((_rolling_quantile_rank_year(MA(sub_1,5), 3)<0.25),0.25-_rolling_quantile_rank_year(MA(sub_1,5), 3),0)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw49.06_L77"
+    },
+    {
+      "factor_id": "I009",
+      "factor": "3M美债YTM近一季均值和前三季均值比较",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_国债收益率_US_530430_260324.xlsx\"[\"美国:国债收益率:3个月\"]",
+      "condition": "z_MA_div(sub_1, 60, 240, 252)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "2_mw49.79_L91"
+    },
+    {
+      "factor_id": "I011",
+      "factor": "6个月美债收益率分位数（近三年）",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_国债收益率_US_530430_260324.xlsx\"[\"美国:国债收益率:6个月\"]",
+      "condition": "if((_rolling_quantile_rank_year(sub_1, 3)>0.75),_rolling_quantile_rank_year(sub_1, 3)-0.75,if((_rolling_quantile_rank_year(sub_1, 3)<0.25),0.25-_rolling_quantile_rank_year(sub_1, 3),0)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw47.92_L93"
+    },
+    {
+      "factor_id": "O004",
+      "factor": "美元指数收盘价",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/日频汇率.xlsx\"[\"美元指数\"]",
+      "condition": "data_yoy(llt(sub_1,5))",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw42.60_L80"
+    },
+    {
+      "factor_id": "O005",
+      "factor": "美元指数（USDX）和90日/120日均线的关系，短期为现值，长期为90日或120日",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/日频汇率.xlsx\"[\"美元指数\"]",
+      "condition": "z_MA_div(sub_1, 5, 120, 252)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "O006",
+      "factor": "十年到期国债收益率 美国",
+      "signal_type": "state",
+      "docu": "\"data_public/流动性/D_国债收益率_US_530430_260324.xlsx\"[\"美国:国债收益率:10年\"]",
+      "condition": "calc_rolling_zscore(sub_1 - calc_llt(sub_1, 12), window_z)",
+      "bar": 1.5,
+      "ret_bar": null,
+      "result": "3_mw49.58_ZHAO_0102"
+    },
+    {
+      "factor_id": "V012",
+      "factor": "PB市净率：风格中位数值之商",
+      "signal_type": "state",
+      "docu": null,
+      "condition": null,
+      "bar": null,
+      "ret_bar": null,
+      "result": "2_L023_Shibor 9M+1M_不太行"
+    },
+    {
+      "factor_id": "V013",
+      "factor": "天风交易拥挤度",
+      "signal_type": "state",
+      "docu": "天风交易拥挤度",
+      "condition": null,
+      "bar": null,
+      "ret_bar": null,
+      "result": "2_mw49.27_L024_Shibor百分数 不太行"
+    },
+    {
+      "factor_id": "V002",
+      "factor": "指数20日动量差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/AIndexEODPrices.parquet",
+      "condition": "399370.SZ_close.pct_change(20) - 399371.SZ_close.pct_change(20)",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V207",
+      "factor": "指数20日动量差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/AIndexEODPrices.parquet",
+      "condition": "399370.SZ_close.pct_change(20) - 399371.SZ_close.pct_change(20)",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V023",
+      "factor": "指数20日动量差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/AIndexEODPrices.parquet",
+      "condition": "399370.SZ_close.pct_change(20) - 399371.SZ_close.pct_change(20)",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V024",
+      "factor": "指数成分股强势占比差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/AIndexHS300FreeWeight.parquet, A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+      "condition": "mean(MA5 > MA20 for 399370.SZ components) - mean(MA5 > MA20 for 399371.SZ components)",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C005",
+      "factor": "A股新增开户数月度变化",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "sub_1 - sub_1.shift(1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C009",
+      "factor": "机构开户数",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "calc_rolling_zscore(sub_1, window=6) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C015",
+      "factor": "私募证券投资基金当月新增备案规模",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "calc_rolling_zscore(sub_1, window=6)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C017",
+      "factor": "股票型基金新发份额相对趋势",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/flow_daily.parquet",
+      "condition": "sub_1 - sub_1.rolling(3).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C018",
+      "factor": "新成立偏股型基金份额（3个月移动平均）",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/flow_daily.parquet",
+      "condition": "sub_1-sub_1.rolling(window=3).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C024",
+      "factor": "美元指数",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/exchange_rate_daily.parquet",
+      "condition": "calc_rolling_zscore(sub_1, window=6)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C032",
+      "factor": "ETF总成交金额",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/FactorC_daily.parquet",
+      "condition": "calc_rolling_z_score(sub_1/sub.shift(1)-1,12)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D010",
+      "factor": "AA+级5年期企业债与5年期国债利差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "(sub_1 - sub_2).rolling(window=9).mean()-(sub_1-sub_2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D011",
+      "factor": "AA-AAA信用利差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "(sub_1 - sub_2).rolling(window=9).mean()-(sub_1-sub_2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D012",
+      "factor": "信用利差",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "0.5 - _rolling_quantile_rank_year(rolling_mean(sub_1 - sub_2, window=5), year=2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D013",
+      "factor": "信用利差(AA+中票5Y - 国开债5Y)",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "(sub_1 - sub_2).rolling(window=9).mean()-(sub_1-sub_2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D014",
+      "factor": "信用利差:3月",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "0.5 - _rolling_quantile_rank_year(rolling_mean(sub_1 - sub_2, window=5), year=2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D015",
+      "factor": "信用利差:9月",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "0.5 - _rolling_quantile_rank_year(rolling_mean(sub_1 - sub_2, window=5), year=2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D017",
+      "factor": "信用利差月度变化",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "(sub_1-sub_2).shift(1) - (sub_1-sub_2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D018",
+      "factor": "信用利差(AA5年-国债5年)",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/rate_daily.parquet",
+      "condition": "(sub_1-sub_2).shift(1) - (sub_1-sub_2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "D021",
+      "factor": "信用扩张因子（中长期贷款同比边际变化）",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "sub_1 - sub_1.rolling(window=2).mean().shift(1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F008",
+      "factor": "CPI同比的环比增速",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "if(sub_1 > sub_1.rolling(window=6).max(),sub_1 - sub_1.rolling(window=6),if(sub_1 < sub_1.rolling(window=6).min(),sub_1 - sub_1.rolling(window=6).min(),0))",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F009",
+      "factor": "CPI月度同比",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "sub_1 - sub_1.rolling(window=3).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F012",
+      "factor": "CPI同比的环比",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "sub_1 - sub_1.shift(1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F015",
+      "factor": "CPI同比的环比（滞后2期）",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "sub_1.shift(3) - sub_1.shift(2) ",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F018",
+      "factor": "PPI月度同比",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "sub_1",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "F021",
+      "factor": "PPI同比环比",
+      "signal_type": "state",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "(sub_1 - sub_1.shift(1)).shift(2)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    }
+  ]
+}

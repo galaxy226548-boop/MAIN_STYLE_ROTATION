@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20161202-申万宏源-兼谈FOF构建中的市场风格识别：解密成长价值风格轮动之LOGISTIC模型",
+          "factor": "成长价值指数涨幅差(滞后1期)",
+          "code": "F011",
+          "factor_id": "V101",
+          "signal_type": "state",
+          "calc_method": "价值指数月涨幅 - 成长指数月涨幅，滞后1个月",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 使用沪深300(大盘/价值代理) 与 中证1000(成长代理) 月涨幅差，滞后1期\n# 原始：stock_large_return - stock_growth_return；>0 表示价值跑赢，与规范相反，乘以-1\nclose_large = hs300_close.resample('ME').last()  # 沪深300(000300.SH)-历史价格.xlsx\nclose_growth = csi1000_close.resample('ME').last()  # 中证1000(000852.SH)-历史价格.xlsx\nret_large = close_large.pct_change()\nret_growth = close_growth.pct_change()\n# 翻转使 >0 => growth\nraw = (ret_large - ret_growth).shift(1) * (-1)\nfactor = calc_rolling_zscore(raw, window=24)  # 24个月≈2年",
+          "docu": "沪深300(价值/大盘代理)：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证1000(成长代理)：A_data/data/style_indexes/中证1000(000852.SH)-历史价格.xlsx",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；中证1000(000852.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "原始 condition 中 stock_large_return - stock_growth_return >0 表示大盘（价值）跑赢，与规范方向相反，已乘以 -1 翻转。该因子为 LOGISTIC 模型的输入特征，单独无方向判断能力，此处仍输出连续值供模型使用。"
+        },
+        {
+          "paper_id": "20161202-申万宏源-兼谈FOF构建中的市场风格识别：解密成长价值风格轮动之LOGISTIC模型",
+          "factor": "成长价值指数涨幅差(滞后3期)",
+          "code": "F012",
+          "factor_id": "V102",
+          "signal_type": "state",
+          "calc_method": "价值指数月涨幅 - 成长指数月涨幅，滞后3个月",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 同 V101，滞后期改为3个月\nclose_large = hs300_close.resample('ME').last()\nclose_growth = csi1000_close.resample('ME').last()\nret_large = close_large.pct_change()\nret_growth = close_growth.pct_change()\n# 翻转使 >0 => growth，滞后3期\nraw = (ret_large - ret_growth).shift(3) * (-1)\nfactor = calc_rolling_zscore(raw, window=24)",
+          "docu": "沪深300(价值/大盘代理)：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证1000(成长代理)：A_data/data/style_indexes/中证1000(000852.SH)-历史价格.xlsx",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；中证1000(000852.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "与 V101 相同數據來源，滞后期为3个月。原始方向同樣与規範相反（price_large - price_growth > 0 => value），已乘以 -1 翻转。"
+        },
+        {
+          "paper_id": "20170302-申万宏源-相对量价视角下的风格轮动研究",
+          "factor": "成交量相对强弱(成长价值)",
+          "code": "F002",
+          "factor_id": "V103",
+          "signal_type": "state",
+          "calc_method": "(价值风格成交金额 / 价值风格流通市值) / (成长风格成交金额 / 成长风格流通市值)",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 成交量相对强弱：value换手率 / growth换手率，比值>1表示价值交投更活跃（偏价值），反向取负\n# turnover_rate = amount / 流通市值，直接用换手率代替(成交金额/流通市值)\nturnover_g = growth_close['turnover_rate']\nturnover_v = value_close['turnover_rate']\nraw = turnover_g / turnover_v - 1   # >0成长换手相对更高 => growth\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，换手率['turnover_rate']，成交额['amount']；value_index.xlsx，日期['date']，换手率['turnover_rate']，成交额['amount']",
+          "notes": "原文公式为(价值成交金额/价值流通市值)/(成长成交金额/成长流通市值)，即价值换手率/成长换手率，>1表示价值交投更活跃，方向应为<=0 => growth。本处已取倒数减1做方向翻转（growth/value-1），使>0对应成长信号。本地growth_index.xlsx和value_index.xlsx有turnover_rate和amount字段，可直接使用换手率代替(成交额/流通市值)比值。"
+        },
+        {
+          "paper_id": "20170605-长江证券-风格轮动：基于成分股动量的成长价值轮动策略",
+          "factor": "价格比：沪深300/中证500",
+          "code": "F001",
+          "factor_id": "V104",
+          "signal_type": "state",
+          "calc_method": "log(沪深300收盘价/中证500收盘价)",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 原策略：log(HS300/ZZ500) < 20日均线 => growth，即相对价格下穿均线时偏成长\n# 将偏离方向内化：均线 - 当前值，偏低（成长占优）时为正\nlog_ratio = np.log(close_HS300 / close_ZZ500)\nma20 = log_ratio.rolling(20).mean()\nraw = ma20 - log_ratio   # log_ratio < ma20 时 raw > 0 => growth\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证500：A_data/data/index_eod.parquet（Indexcd=000905）",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；index_eod.parquet筛选Indexcd==000905，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "原策略信号方向：log(HS300/ZZ500) < 20日均线时偏成长（中证500>沪深300相对强势，成长风格占优）。已将条件转为连续量：ma20 - log_ratio > 0 对应 growth。中证500本地无独立文件，从index_eod.parquet中筛选Indexcd=000905获取。"
+        },
+        {
+          "paper_id": "20170605-长江证券-风格轮动：基于成分股动量的成长价值轮动策略",
+          "factor": "相对强弱：沪深300-中证500月收益率差",
+          "code": "F003",
+          "factor_id": "V105",
+          "signal_type": "state",
+          "calc_method": "沪深300过去20个交易日收益率 - 中证500过去20个交易日收益率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 沪深300代表大盘/价值，中证500代表中小盘/成长\n# HS300收益 > ZZ500收益 => 价值占优；反向：ZZ500 - HS300 > 0 => growth\nret_HS300 = calc_rolling_return(close_HS300, window=20)\nret_ZZ500 = calc_rolling_return(close_ZZ500, window=20)\nraw = ret_ZZ500 - ret_HS300   # >0 成长(中证500)跑赢价值(沪深300)\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证500：A_data/data/index_eod.parquet（Indexcd=000905）",
+          "data_field": "沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；index_eod.parquet筛选Indexcd==000905，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "研报原文为HS300-ZZ500收益率差，方向对应价值占优时为正。此处已取反（ZZ500-HS300），使>0对应成长信号。用中证500近似代表成长风格（相对沪深300偏中小成长），与研报语境一致。"
+        }
+      ]
+    }
+  }
+}

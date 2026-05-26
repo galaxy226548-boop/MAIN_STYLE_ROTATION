@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20130820-海通证券-3M基金投资产品系列之四：基于价量指标的市场风格轮动策略",
+          "factor": "中证500/中证100成交额比值",
+          "code": "F002",
+          "factor_id": "V096",
+          "signal_type": "state",
+          "calc_method": "中证500周成交额 / 中证100周成交额",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# Idxtrd07 为成份证券成交金额\namt_500 = index_eod.loc[index_eod['Indexcd']=='000905', ['Idxtrd01','Idxtrd07']].set_index('Idxtrd01')['Idxtrd07']\namt_100 = index_eod.loc[index_eod['Indexcd']=='000903', ['Idxtrd01','Idxtrd07']].set_index('Idxtrd01')['Idxtrd07']\n# 周频成交额汇总\namt_500_w = amt_500.resample('W').sum()\namt_100_w = amt_100.resample('W').sum()\nratio_amt = amt_500_w / amt_100_w\n# 均线差（M窗口研报未明确，默认8周，短于价格窗口12周）\nma_m = ratio_amt.rolling(window=8).mean()\nraw = ratio_amt - ma_m\nfactor = calc_rolling_zscore(raw, window=104)",
+          "docu": "A_data/data/update/index_eod.parquet（筛选 Indexcd==000905 中证500；Indexcd==000903 中证A100 代替中证100）",
+          "data_field": "index_eod.parquet 中筛选 Indexcd==000905 和 Indexcd==000903，日期['Idxtrd01']，成份证券成交金额['Idxtrd07']",
+          "notes": "成交额字段使用 Idxtrd07（成份证券成交金额）；均线窗口M研报未明确，默认8周（短于价格窗口）；中证100用中证A100(000903)替代。"
+        },
+        {
+          "paper_id": "20140417-海通证券-量化资产配置：板块持仓测算在创业板风格轮动中的应用",
+          "factor": "创业板相对主板强弱指数",
+          "code": "F002",
+          "factor_id": "V097",
+          "signal_type": "state",
+          "calc_method": "创业板综指收盘价 / 上证A股指数收盘价",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 创业板综指(399006)收盘价 / 沪深300(000300) 作为主板代理（本地无专属上证A股指数文件）\nclose_gem = gem_close  # 创业板指(399006.SZ)-历史价格.xlsx\nclose_main = hs300_close  # 沪深300(000300.SH)-历史价格.xlsx\nratio = close_gem / close_main\n# 环比变化：比值上升=>成长，下降=>价值；保留连续差值\nraw = ratio - ratio.shift(1)\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "创业板指：A_data/data/style_indexes/创业板指(399006.SZ)-历史价格.xlsx；主板代理（沪深300）：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx",
+          "data_field": "创业板指(399006.SZ)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']；沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "研报原文使用创业板综指/上证A股指数，但本地无上证A股专属文件，用沪深300作为主板代理（已有本地文件）；创业板为成长端，主板为价值端，比值环比上升=>成长方向已内化。"
+        },
+        {
+          "paper_id": "20150226-天天基金网-专题研究报告：如何构建风格轮动的指基投资策略",
+          "factor": "中证500/沪深300相对强弱指标",
+          "code": "F001",
+          "factor_id": "V098",
+          "signal_type": "unknown",
+          "calc_method": "中证500指数收盘价 / 沪深300指数收盘价",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 该因子为 F002(V099) 的中间变量，自身不直接产生信号\n# 保留比值序列供下游均线计算使用\nclose_500 = index_eod.loc[index_eod['Indexcd']=='000905', ['Idxtrd01','Idxtrd05']].set_index('Idxtrd01')['Idxtrd05']\nclose_300 = hs300_close  # 沪深300(000300.SH)-历史价格.xlsx\nsub_1 = close_500 / close_300\nfactor = calc_rolling_zscore(sub_1 - sub_1.rolling(252).mean(), window=504)",
+          "docu": "中证500：A_data/data/update/index_eod.parquet（筛选 Indexcd==000905）；沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx",
+          "data_field": "index_eod.parquet 中筛选 Indexcd==000905，日期['Idxtrd01']，收盘价['Idxtrd05']；沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "该因子为中间序列，单独信号方向未知（研报原文 signal_type=unknown），此处对比值与其年线偏离做 zscore 输出连续值；主要供 V099 使用。中证500代表成长，沪深300代表价值/大盘基准。"
+        },
+        {
+          "paper_id": "20150226-天天基金网-专题研究报告：如何构建风格轮动的指基投资策略",
+          "factor": "中证500/沪深300相对强弱指标10日与30日均线差",
+          "code": "F002",
+          "factor_id": "V099",
+          "signal_type": "state",
+          "calc_method": "先计算相对强弱指标（F001），再计算其10日简单移动平均减去30日简单移动平均",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 为 V098 的比值序列（中证500/沪深300）\nclose_500 = index_eod.loc[index_eod['Indexcd']=='000905', ['Idxtrd01','Idxtrd05']].set_index('Idxtrd01')['Idxtrd05']\nclose_300 = hs300_close\nsub_1 = close_500 / close_300\n# 10日均线 - 30日均线；差值>0成长，<0价值，方向符合规范\nraw = sub_1.rolling(window=10).mean() - sub_1.rolling(window=30).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "中证500：A_data/data/update/index_eod.parquet（筛选 Indexcd==000905）；沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx",
+          "data_field": "index_eod.parquet 中筛选 Indexcd==000905，日期['Idxtrd01']，收盘价['Idxtrd05']；沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "均线差>0表示成长（中证500）动量强于价值（沪深300），方向与规范一致，无需翻转。"
+        },
+        {
+          "paper_id": "20161123-申万宏源-基于风格轮动与BL模型的行业配置策略",
+          "factor": "价值成长相对强弱指数Rn",
+          "code": "F001",
+          "factor_id": "V100",
+          "signal_type": "state",
+          "calc_method": "申万价值指数收益率与申万成长指数收益率的对数差",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# Rn = log(价值指数) - log(成长指数)；原始方向 >0=>value，需乘以-1翻转\nvalue_close = value_index_close  # A_data/data/style_indexes/value_index.xlsx\ngrowth_close = growth_index_close  # A_data/data/style_indexes/growth_index.xlsx\nlog_ret_value = np.log(value_close).diff()\nlog_ret_growth = np.log(growth_close).diff()\n# 原始 Rn = log_ret_value - log_ret_growth；>0 => value（与规范相反）\nraw = (log_ret_value - log_ret_growth) * (-1)  # 翻转：>0 => growth\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "growth_index.xlsx，日期['date']，收盘价['close']；value_index.xlsx，日期['date']，收盘价['close']",
+          "notes": "原始 Rn = 价值对数收益 - 成长对数收益，>0表示价值跑赢（即 value 信号），与规范方向相反；已乘以 -1 翻转，使 >0 => growth。国证成长(399370)/国证价值(399371)本地均有文件。"
+        }
+      ]
+    }
+  }
+}

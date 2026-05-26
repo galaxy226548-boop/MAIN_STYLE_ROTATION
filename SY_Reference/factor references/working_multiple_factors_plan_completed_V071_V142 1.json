@@ -1,0 +1,50 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 2,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20130704-海通证券-华夏上证行业ETF风格轮动策略之一：利用债券YTM打造行业风格导航仪",
+          "factor": "估值强度指标",
+          "code": "F008",
+          "factor_id": "V141",
+          "signal_type": "state",
+          "calc_method": "行业月末市盈率 / 行业市盈率历史均值",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 月末PE / 历史滚动均值，取对数差分以保留偏离程度\n# 窗口未明确，以36个月（约756日）为默认历史均值窗口\nsub_pe_monthly = sub_pe.resample('ME').last()\npe_mean = sub_pe_monthly.rolling(window=36).mean()\nraw = sub_pe_monthly / pe_mean - 1.0  # 偏离历史均值的比例\nfactor = calc_rolling_zscore(raw, window=36)",
+          "docu": "本地无上证行业ETF分行业PE专用文件；近似替代同F007：A_data/data/Daily/个股日交易衍生指标134252198/STK_MKT_DALYR.xlsx（含PE字段，需按行业聚合）",
+          "data_field": "STK_MKT_DALYR.xlsx，交易日期['TradingDate']，股票代码['Symbol']，市盈率['PE']；按行业筛选后取月末均值PE，再除以该行业滚动36个月历史均值PE",
+          "notes": "历史窗口未在研报中明确，默认使用36个月（3年）滚动均值，需人工确认。signal_rule为unknown，direction由SVM/模型学习；raw>0表示PE高于历史均值（估值偏贵/趋势强），方向假设依赖下游模型。数据源同F007（V140）。"
+        },
+        {
+          "paper_id": "20180612-华宝证券-金融工程专题报告：价值、成长风格轮动与FOF策略构建",
+          "factor": "成长/价值相对估值历史分位数",
+          "code": "F005",
+          "factor_id": "V142",
+          "signal_type": "event",
+          "calc_method": "成长指数市盈率/价值指数市盈率，计算该比值滚动3年历史分位数",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 成长/价值PE比值的滚动3年历史分位数\npe_growth = sub_1  # 成长指数市盈率TTM\npe_value = sub_2   # 价值指数市盈率TTM\npe_ratio = pe_growth / pe_value\n# 滚动756日（≈3年）分位数\nquantile_rank = pe_ratio.rolling(756).rank(pct=True)\n# 分位数>0.8 => 成长过贵 => value；分位数<0.2 => 成长偏低 => growth\n# 连续化：偏离中位的幅度，并翻转（高分位=value=负值）\nraw = -(quantile_rank - 0.5)  # 翻转：分位数高=>负，分位数低=>正\n# 稀疏输出：仅在触发阈值时保留信号，中间区域置0\nfactor = pd.Series(0.0, index=quantile_rank.index)\ncond_value = (quantile_rank > 0.8)\ncond_growth = (quantile_rank < 0.2)\nfactor[cond_value] = raw[cond_value]\nfactor[cond_growth] = raw[cond_growth]",
+          "docu": "成长指数估值：A_data/data/比价/D_PE+PB+DI+PS+PC+调仓_growth_100104_260325.xlsx；价值指数估值：A_data/data/比价/D_PE+PB+DI+PS+PC+调仓_value_100104_260325.xlsx",
+          "data_field": "D_PE+PB+DI+PS+PC+调仓_growth_100104_260325.xlsx，日期['交易日期']，市盈率TTM['市盈率TTM']；D_PE+PB+DI+PS+PC+调仓_value_100104_260325.xlsx，日期['交易日期']，市盈率TTM['市盈率TTM']；计算两者比值后做3年滚动分位数",
+          "notes": "原始规则：分位数>0.8 => value，分位数<0.2 => growth；condition中已乘以-1翻转，使高分位输出负值（value方向），符合规范。因子为稀疏序列（仅分位数越界时有信号），按规范对各输入分别处理，不对整体做zscore。数据来源已在原待完成版中给出，确认与data_inventory一致。"
+        }
+      ]
+    }
+  }
+}

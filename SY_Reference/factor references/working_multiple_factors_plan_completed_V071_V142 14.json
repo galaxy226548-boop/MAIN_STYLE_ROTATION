@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20200825-申万宏源-ETF量化配置策略研究系列之一：运用富国基金ETF产品捕获行业风格轮动",
+          "factor": "中证全指20日换手率均值",
+          "code": "F001",
+          "factor_id": "V076",
+          "signal_type": "state",
+          "calc_method": "中证全指近20个交易日换手率的算术平均值",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = 中证全指换手率（日频）\n# 以偏离阈值的幅度作为连续因子值\nma20 = sub_1.rolling(window=20).mean()\nraw = ma20 - 1.1\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx",
+          "data_field": "中证全指(000985.CSI)-历史价格.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "阈值1.1来自研报；raw = ma20 - 1.1保留连续偏离幅度；zscore统一量纲，换手率单位与原始数据一致（%）。"
+        },
+        {
+          "paper_id": "20220606-申万宏源-短中长三维度升级申万风格轮动模型",
+          "factor": "wind全A换手率相对趋势",
+          "code": "F013",
+          "factor_id": "V077",
+          "signal_type": "state",
+          "calc_method": "wind全A指数换手率减去其过去15日均值",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = Wind全A换手率（日频）\n# 研报原始：偏差>0 => 拥挤 => 价值防御，取负号后 factor>0 对应成长\ndeviation = sub_1 - sub_1.rolling(window=15).mean()\nraw = deviation * (-1)\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "8841388.WI_windallA.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "研报原始方向：换手率高于近期均值代表拥挤偏价值；取负号翻转后 factor>0 对应成长；zscore统一量纲。"
+        },
+        {
+          "paper_id": "20220805-兴业证券-风格轮动系列七：多维结构化成长价值轮动模型",
+          "factor": "股市换手率分位数",
+          "code": "F001",
+          "factor_id": "V078",
+          "signal_type": "state",
+          "calc_method": "每月底计算万得全A滚动21个交易日平均换手率，再计算该均值在过去2年的滚动历史分位数",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = Wind全A换手率（日频）\n# 以偏离中位的幅度作为连续因子值\nma21 = sub_1.rolling(window=21).mean()\nquantile_rank = _rolling_quantile_rank_year(ma21, year=2)\n# 對偏離幅度分別zscore\ndev_high = calc_rolling_zscore(quantile_rank - 0.6, window=504)  # 高於中性區間的幅度\ndev_low  = calc_rolling_zscore(0.4 - quantile_rank, window=504)  # 低於中性區間的幅度\n# 區間外才輸出信號，區間內保持0\nfactor = pd.Series(0.0, index=quantile_rank.index)\nfactor[quantile_rank > 0.6] =  dev_high[quantile_rank > 0.6]   # 成長\nfactor[quantile_rank < 0.4] =  dev_low[quantile_rank < 0.4]    # 價值（dev_low此時為正，需取負）\nfactor[quantile_rank < 0.4] *= -1",
+          "docu": "A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "8841388.WI_windallA.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "万得全A换手率以本地8841388.WI_windallA.xlsx代理；月底频率可通过resample('BME').last()实现；raw = quantile_rank - 0.5保留连续偏离幅度；zscore统一量纲。"
+        },
+        {
+          "paper_id": "20241102-国泰君安-风格轮动量化研究系列之一：量化视角多维度构建成长价值风格轮动策略",
+          "factor": "换手率因子",
+          "code": "F012",
+          "factor_id": "V079",
+          "signal_type": "state",
+          "calc_method": "全市场换手率，使用5日和250日均线判断趋势",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "sub_1 = index_eod.loc[index_eod['Indexcd'] == '000985', '换手率'].ffill()\nshort_ma = sub_1.rolling(5).mean()\nlong_ma = sub_1.rolling(250).mean()\nraw = short_ma - long_ma\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=000985，中证全指作为全市场换手率替代）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='000985'，日期['Idxtrd01']，换手率['换手率']",
+          "notes": "可用中证全指换手率作为全市场换手率的替代。原始信号方向：short_ma > long_ma => growth，与规范一致，无需翻转。"
+        },
+        {
+          "paper_id": "20150605-海通证券-A股市场特征研究（三）：基于VIX指数的风格轮动",
+          "factor": "上证50指数滚动20日收益率方差变化率",
+          "code": "F001",
+          "factor_id": "V080",
+          "signal_type": "state",
+          "calc_method": "计算上证50指数过去20个交易日日收益率方差，当前方差除以前一个20日方差减1",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "close_50 = index_eod.loc[index_eod['Indexcd'] == '000016', 'Idxtrd05'].ffill()\nret = close_50.pct_change()\nvar_20 = ret.rolling(20).var()\nraw = var_20 / var_20.shift(20) - 1\n# 原始方向：>0 => value，需翻转\nfactor = calc_rolling_zscore(raw, window=504) * (-1)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=000016，上证50）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='000016'，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "原始研报方向：方差变化率>0 => value，<0 => growth；condition中乘以-1翻转以符合规范。index_eod.parquet含上证50(000016)数据已确认。"
+        }
+      ]
+    }
+  }
+}

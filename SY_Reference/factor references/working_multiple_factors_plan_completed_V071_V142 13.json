@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20150605-海通证券-A股市场特征研究（三）：基于VIX指数的风格轮动",
+          "factor": "VIX指数变化率(75日)",
+          "code": "F002",
+          "factor_id": "V081",
+          "signal_type": "state",
+          "calc_method": "当日VIX指数 / 过去75个交易日平均值 - 1",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "vix = vix_data['收盘价'].ffill()\nraw = vix / vix.rolling(75).mean() - 1\n# 原始方向：>0 => value，需翻转\nfactor = calc_rolling_zscore(raw, window=504) * (-1)",
+          "docu": "A_data/data/update/VIX.GI-行情统计-20260509.xlsx",
+          "data_field": "VIX.GI-行情统计-20260509.xlsx，日期['交易日期']，收盘价['收盘价']",
+          "notes": "原始研报方向：VIX变化率>0 => value，<0 => growth；condition中乘以-1翻转以符合规范。本地已确认存在VIX.GI数据文件，字段为收盘价。"
+        },
+        {
+          "paper_id": "20180513-兴业证券-CTA策略系列报告之七：量化基本面探索之基于宏观经济因素以及市场自身特点的沪深300和创业板轮动策略",
+          "factor": "CRB现货指数综合对数",
+          "code": "F002",
+          "factor_id": "V082",
+          "signal_type": "state",
+          "calc_method": "CRB现货指数取对数后，经经验CDF逆正态变换标准化处理；基于expanding分位数信号",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "import numpy as np\nfrom scipy.stats import norm\ncrb = macro_daily['CRB现货指数:综合'].ffill()\nlog_crb = np.log(crb)\n# expanding empirical CDF -> probit transform\nquantile_rank = log_crb.expanding().rank(pct=True)\nraw = norm.ppf(quantile_rank.clip(0.001, 0.999))\n# 原始方向：物价高涨利好沪深300(价值)，需翻转\nfactor = calc_rolling_zscore(raw, window=504) * (-1)",
+          "docu": "A_data/data/macro_daily.parquet（原始文件：data/update/CRB现货指数_综合.xlsx）",
+          "data_field": "macro_daily.parquet，日期索引，CRB现货指数综合['CRB现货指数:综合']",
+          "notes": "本地已确认存在CRB现货指数_综合.xlsx，clean_data为macro_daily.parquet。原始信号方向：CRB高 => 物价高涨 => 利好沪深300(价值)，condition中乘以-1翻转。经验CDF+逆正态变换为兴业研报的标准化做法。"
+        },
+        {
+          "paper_id": "20241216-国金证券-跟踪资金流系列专题（二）：海外ETF资金流因子影响下的行业风格轮动策略，当前环境下如何日频跟踪外资聪明钱？",
+          "factor": "12日收盘价格回归系数差分",
+          "code": "F018",
+          "factor_id": "V083",
+          "signal_type": "state",
+          "calc_method": "收盘价对时间序列回归的斜率的一阶差分",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "import numpy as np\n# 以国证成长(399370)和国证价值(399371)指数为标的\nclose_g = index_eod.loc[index_eod['Indexcd'] == '399370', 'Idxtrd05'].ffill()\nclose_v = index_eod.loc[index_eod['Indexcd'] == '399371', 'Idxtrd05'].ffill()\n\ndef rolling_slope(series, window=12):\n    slopes = series.copy() * np.nan\n    for i in range(window - 1, len(series)):\n        y = series.iloc[i - window + 1: i + 1].values\n        x = np.arange(window)\n        slopes.iloc[i] = np.polyfit(x, y, 1)[0]\n    return slopes\n\nslope_g = rolling_slope(close_g, 12)\nslope_v = rolling_slope(close_v, 12)\ndiff_g = slope_g - slope_g.shift(1)\ndiff_v = slope_v - slope_v.shift(1)\nraw = diff_g - diff_v\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=399370 国证成长；Indexcd=399371 国证价值）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='399370'和'399371'，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "研报原文signal_rule未明确，IC为正推测因子值越高越有利于成长方向。这里以成长指数斜率差分减价值指数斜率差分构造相对动量，正值代表成长占优。计算复杂，建议向量化改写rolling_slope提升效率。"
+        },
+        {
+          "paper_id": "20241216-国金证券-跟踪资金流系列专题（二）：海外ETF资金流因子影响下的行业风格轮动策略，当前环境下如何日频跟踪外资聪明钱？",
+          "factor": "过去5日收益率（相较于行业均值）",
+          "code": "F009",
+          "factor_id": "V084",
+          "signal_type": "state",
+          "calc_method": "过去5日行业收益率 - 同期行业均值收益率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 使用国证成长(399370)和国证价值(399371)的5日收益率相对差\nclose_g = index_eod.loc[index_eod['Indexcd'] == '399370', 'Idxtrd05'].ffill()\nclose_v = index_eod.loc[index_eod['Indexcd'] == '399371', 'Idxtrd05'].ffill()\nret5_g = close_g.pct_change(5)\nret5_v = close_v.pct_change(5)\nmean_ret5 = (ret5_g + ret5_v) / 2\nsub_1 = ret5_g - mean_ret5\nsub_2 = ret5_v - mean_ret5\nraw = sub_1 - sub_2\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=399370 国证成长；Indexcd=399371 国证价值）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='399370'和'399371'，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "研报原文针对行业层面的超额收益，IC为正代表近期相对强势的行业继续占优。此处以成长vs价值指数代替行业维度：计算成长指数5日收益率超额（相对成长+价值均值），正值代表成长短期动量占优。"
+        },
+        {
+          "paper_id": "20241216-国金证券-跟踪资金流系列专题（二）：海外ETF资金流因子影响下的行业风格轮动策略，当前环境下如何日频跟踪外资聪明钱？",
+          "factor": "近20日收益率差分",
+          "code": "F017",
+          "factor_id": "V085",
+          "signal_type": "state",
+          "calc_method": "近20日收益率的一阶差分",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "close_g = index_eod.loc[index_eod['Indexcd'] == '399370', 'Idxtrd05'].ffill()\nclose_v = index_eod.loc[index_eod['Indexcd'] == '399371', 'Idxtrd05'].ffill()\nret20_g = close_g.pct_change(20)\nret20_v = close_v.pct_change(20)\ndiff_g = ret20_g - ret20_g.shift(1)\ndiff_v = ret20_v - ret20_v.shift(1)\nraw = diff_g - diff_v\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/index_eod.parquet（Indexcd=399370 国证成长；Indexcd=399371 国证价值）",
+          "data_field": "index_eod.parquet中筛选Indexcd=='399370'和'399371'，日期['Idxtrd01']，收盘价['Idxtrd05']",
+          "notes": "研报为行业层面微观动量因子，IC为正。此处以成长vs价值指数的近20日收益率一阶差分之差代替，正值代表成长方向近期动量加速占优。"
+        }
+      ]
+    }
+  }
+}

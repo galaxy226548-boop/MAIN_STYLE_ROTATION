@@ -1,0 +1,308 @@
+{
+  "signal_type": "event",
+  "batch_index": 2,
+  "total_batches": 2,
+  "record_count": 30,
+  "records": [
+    {
+      "factor_id": "P010",
+      "factor": "PPI 当月同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"]",
+      "condition": "sub_1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw48.65_L18"
+    },
+    {
+      "factor_id": "P012",
+      "factor": "工业增加值同比",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"月工业增加值:当月同比(%)\")][\"今值\"]",
+      "condition": "sub_1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw50.52_L19"
+    },
+    {
+      "factor_id": "P013",
+      "factor": "工业增加值同比短期均线穿长期均线",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"月工业增加值:当月同比(%)\")][\"今值\"]",
+      "condition": "data_diff(llt(sub_1, 5))",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "1_mw50.42_L20"
+    },
+    {
+      "factor_id": "P014",
+      "factor": "PPI同比平滑值环比上升",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx[[\"指标名称\"]include(\"月PPI:同比\")][\"今值\"]",
+      "condition": "_rolling_sum_ratio_minus_one(sub_1, window=5, shift=1)",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "2_mw47.92_ZHAO_ST_momentum"
+    },
+    {
+      "factor_id": "G022",
+      "factor": "新增社零",
+      "signal_type": "event",
+      "docu": "\"data_public/宏观大事/Macro_all.xlsx\"[[\"指标名称\"]include(\"社会消费品零售总额\")][\"今值\"]",
+      "condition": "rollingsum(sub_1,window=12)/(rollingsum(sub_1,window=12).shift(1))-1",
+      "bar": 0,
+      "ret_bar": null,
+      "result": "3_mw50.99_ZHAO11"
+    },
+    {
+      "factor_id": "G002",
+      "factor": "中长期贷款余额同比",
+      "signal_type": "event",
+      "docu": "data_public/月度/DebtData.xlsx",
+      "condition": "sub_1 - sub_1.rolling(window=3).mean()",
+      "bar": "0",
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C002",
+      "factor": "A股账户新增开户数：合计：半年新高/新低事件",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "if(sub_1 > sub_1.rolling(window=6).max(),sub_1 - sub_1.rolling(window=6).max(),if(sub_1 < sub_1.rolling(window=6).min(), sub_1.rolling(window=6).min()-sub_1,0))",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C003",
+      "factor": "A股账户新增开户数",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/macro_monthly.parquet",
+      "condition": "sub_1 - sub_1.rolling(window=3).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "C031",
+      "factor": "公募基金资产管理规模（AUM）",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/FactorC_monthly.parquet",
+      "condition": "calc_rolling_z_score(sub_1/sub.shift(1)-1,12)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "G033",
+      "factor": "PMI处于相对高位且超预期",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "(sub_1> 51) and (sub_1 > sub_2) if(sub_1<49 and sub_1<sub_2,sub_2-sub_1,if(sub_1>51 and sub_1>sub_2, sub_2-sub_1,0)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "G034",
+      "factor": "非制造业PMI：半年新低事件",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/FactorG_monthly.parquet",
+      "condition": "if(sub_1 > sub_1.rolling(window=6).max(),sub_1 - sub_1.rolling(window=6).max(),if(sub_1 < sub_1.rolling(window=6).min(), sub_1.rolling(window=6).min()-sub_1,0))",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "G067",
+      "factor": "固定资产投资完成额累计同比突破6个月布林带上界",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/FactorG_monthly.parquet",
+      "condition": "if(sub_1 < (sub_1.rolling(window=6).mean() - 2 * sub_1.rolling(window=6).std()),(sub_1.rolling(window=6).mean() - 2 * sub_1.rolling(window=6).std())-sub_1,if(sub_1 > (sub_1.rolling(window=6).mean() + 2 * sub_1.rolling(window=6).std()),(sub_1.rolling(window=6).mean() + 2 * sub_1.rolling(window=6).std())-sub_1,0))*(-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "G068",
+      "factor": "GDP当季同比：半年新高事件",
+      "signal_type": "event",
+      "docu": "A_data/prepared_data/macro.parquet",
+      "condition": "if(sub_1 > sub_1.rolling(window=6).max(),sub_1 - sub_1.rolling(window=6).max(),if(sub_1 < sub_1.rolling(window=6).min(), sub_1.rolling(window=6).min()-sub_1,0))*(-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "O013",
+      "factor": "美元兑港元远期汇率前月升贴水",
+      "signal_type": "event",
+      "docu": "exchange_rate_daily.parquet",
+      "condition": "sign(sub_1-calc_rolling_mean(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS))*max(abs(sub_1-calc_rolling_mean(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS))-calc_rolling_std(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS),0)/calc_rolling_std(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "O025",
+      "factor": "韩国半导体出口金额，当月值",
+      "signal_type": "event",
+      "docu": "factorO_monthly.parquet",
+      "condition": "sign(sub_1/sub_1.shift(12)-1-calc_rolling_mean(sub_1/sub_1.shift(12)-1,window=36,min_periods=24))*max(abs(sub_1/sub_1.shift(12)-1-calc_rolling_mean(sub_1/sub_1.shift(12)-1,window=36,min_periods=24))-calc_rolling_std(sub_1/sub_1.shift(12)-1,window=36,min_periods=24),0)/calc_rolling_std(sub_1/sub_1.shift(12)-1,window=36,min_periods=24)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "O013",
+      "factor": "美元兑港元远期汇率前月升贴水",
+      "signal_type": "event",
+      "docu": "exchange_rate_daily.parquet",
+      "condition": "sign(sub_1-calc_rolling_mean(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS))*max(abs(sub_1-calc_rolling_mean(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS))-calc_rolling_std(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS),0)/calc_rolling_std(sub_1,window=Config.ANNUAL_TRADING_DAYS,min_periods=Config.ANNUAL_TRADING_DAYS)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "O025",
+      "factor": "韩国半导体出口金额，当月值",
+      "signal_type": "event",
+      "docu": "factorO_monthly.parquet",
+      "condition": "sign(sub_1/sub_1.shift(12)-1-calc_rolling_mean(sub_1/sub_1.shift(12)-1,window=36,min_periods=24))*max(abs(sub_1/sub_1.shift(12)-1-calc_rolling_mean(sub_1/sub_1.shift(12)-1,window=36,min_periods=24))-calc_rolling_std(sub_1/sub_1.shift(12)-1,window=36,min_periods=24),0)/calc_rolling_std(sub_1/sub_1.shift(12)-1,window=36,min_periods=24)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P061",
+      "factor": "业绩增速差综合信号",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "sub_i = growth_yoy_i - value_yoy_i; if count(sub_i > 0) >= 2 then 1 elif count(sub_i < 0) >= 2 then -1 else 0",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P061",
+      "factor": "业绩增速差综合信号",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "sub_i = growth_yoy_i - value_yoy_i; if count(sub_i > 0) >= 2 then 1 elif count(sub_i < 0) >= 2 then -1 else 0",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P037",
+      "factor": "相对盈利优势（价值ROE-成长ROE）",
+      "signal_type": "event",
+      "docu": "风格指数成分股数据：AIndexHS300FreeWeight.parquet；ROE：Ashare_profit.parquet",
+      "condition": "sub_1 - sub_2  # sub_1 = 国证成长ROE(整体法), sub_2 = 国证价值ROE(整体法)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P039",
+      "factor": "全指净资产收益率(ROE)",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1.rolling(13).mean() - sub_1.rolling(26).mean())  # sub_1 = 中证全指TTM ROE",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P041",
+      "factor": "全指流动比率",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1.rolling(13).mean() - sub_1.rolling(5).mean())  # sub_1 = 中证全指流动比率",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P052",
+      "factor": "全指毛利率",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1.rolling(13).mean() - sub_1.rolling(26).mean())",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P053",
+      "factor": "(成长-价值)毛利率",
+      "signal_type": "event",
+      "docu": "风格指数成分股数据：AIndexHS300FreeWeight.parquet；毛利率指标Ashare_profit.parquet",
+      "condition": "(sub_1.rolling(13).mean() - sub_1.rolling(26).mean())",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P054",
+      "factor": "(成长-价值)存货周转率",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1.rolling(5).mean() - sub_1.rolling(13).mean())",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P056",
+      "factor": "(成长-价值)总资产周转率",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1.rolling(5).mean() - sub_1.rolling(13).mean())",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P057",
+      "factor": "ROE水平差",
+      "signal_type": "event",
+      "docu": "风格指数成分股数据：AIndexHS300FreeWeight.parquet；ROE：Ashare_profit.parquet",
+      "condition": "(sub_1 - sub_2).rolling(13).mean() - (sub_1 - sub_2).rolling(26).mean() # sub_1 = 国证成长ROE(TTM), sub_2 = 国证价值ROE(TTM)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "P059",
+      "factor": "归母净利润率水平差",
+      "signal_type": "event",
+      "docu": "IndexStatement.xlsx",
+      "condition": "(sub_1 - sub_2).rolling(13).mean() - (sub_1 - sub_2).rolling(26).mean() # sub_1 = 国证成长归母净利率(TTM), sub_2 = 国证价值归母净利率(TTM)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V041",
+      "factor": "成长价值相对动量（均线突破）",
+      "signal_type": "event",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "rel_nv = (1 + growth_close.pct_change()).cumprod() \\\n         / (1 + value_close.pct_change()).cumprod()\nfactor = rel_nv - rel_nv.rolling(window=20).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V038",
+      "factor": "价值/成长相对强弱指数动量突破",
+      "signal_type": "event",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_value  = value_close.pct_change()\nret_growth = growth_close.pct_change()\nrsi = (1 + ret_value).cumprod() / (1 + ret_growth).cumprod()\nupper = rsi.rolling(60).max()\nlower = rsi.rolling(60).min()\n# 连续值:rsi 相对通道中点的归一化位置,范围 [-1, 1]\nmid   = (upper + lower) / 2\nhalf  = (upper - lower) / 2\nfactor = ((rsi - mid) / half) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    }
+  ]
+}

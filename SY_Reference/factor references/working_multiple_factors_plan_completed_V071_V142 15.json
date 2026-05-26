@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20230120-兴业证券-基于拐点+趋势的成长价值轮动研究",
+          "factor": "风格关注度拐点期（相对换手率分位数）",
+          "code": "F006",
+          "factor_id": "V071",
+          "signal_type": "state",
+          "calc_method": "计算成长指数与价值指数换手率之比，取滚动90日均值，然后计算该值相对过去2年的分位数。每日观察：若分位数<5%，且过去15日成长相对价值收益为正，则看好成长；若分位数>95%，且过去15日价值相对成长收益为正，则看好价值；否则无信号。",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_g = growth_index['turnover_rate'], sub_v = value_index['turnover_rate']\nratio = sub_g / sub_v\nratio_ma90 = ratio.rolling(window=90).mean()\nquantile_rank = _rolling_quantile_rank_year(ratio_ma90, year=2)\ngrowth_ret_15d = growth_close.pct_change(15)\nvalue_ret_15d  = value_close.pct_change(15)\ngrowth_momentum_15d = growth_ret_15d - value_ret_15d\n# 分别对两个输入变量zscore，统一各自量纲\nquantile_dev_low  = calc_rolling_zscore(0.05 - quantile_rank, window=504)  # 分位数越低值越大\nquantile_dev_high = calc_rolling_zscore(quantile_rank - 0.95, window=504)  # 分位数越高值越大\nmomentum_z = calc_rolling_zscore(growth_momentum_15d, window=504)\n# 条件满足时以两者之积作为强度，条件不满足保持0（无信号）\nfactor = pd.Series(0.0, index=quantile_rank.index)\nfactor[(quantile_rank < 0.05) & (growth_momentum_15d > 0)] = \\\n    quantile_dev_low[(quantile_rank < 0.05) & (growth_momentum_15d > 0)] * \\\n    momentum_z[(quantile_rank < 0.05) & (growth_momentum_15d > 0)]\nfactor[(quantile_rank > 0.95) & (growth_momentum_15d < 0)] = \\\n    -quantile_dev_high[(quantile_rank > 0.95) & (growth_momentum_15d < 0)] * \\\n    momentum_z[(quantile_rank > 0.95) & (growth_momentum_15d < 0)].abs()",
+          "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+          "data_field": "成长指数日期['date']，换手率['turnover_rate']，收盘价['close']；价值指数日期['date']，换手率['turnover_rate']，收盘价['close']",
+          "notes": "本地缺少申万成长价值指数换手率，以国证成长(399370)和国证价值(399371)替代。对分位数偏离幅度和动量分别zscore后相乘作为强度，避免对稀疏序列整体zscore；条件不满足时 factor=0（无信号）；zscore窗口504≈2年。"
+        },
+        {
+          "paper_id": "20241216-国金证券-跟踪资金流系列专题（二）：海外ETF资金流因子影响下的行业风格轮动策略，当前环境下如何日频跟踪外资\"聪明钱\"？",
+          "factor": "60日平均换手率变化",
+          "code": "F007",
+          "factor_id": "V072",
+          "signal_type": "state",
+          "calc_method": "60日平均换手率 / 前一期60日平均换手率 - 1",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = Wind全A换手率序列（日频）\n# IC为负：换手率加速上升 -> 市场拥挤 -> 偏价值，取负号后 factor>0 对应成长\nma60 = sub_1.rolling(window=60).mean()\nraw = (ma60 / ma60.shift(1) - 1) * (-1)\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "8841388.WI_windallA.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "情绪类因子，IC为负，权重-50%；原始换手率加速上升对应拥挤/价值，取负号后统一方向；zscore消除量纲。"
+        },
+        {
+          "paper_id": "20130225-广发证券-风格轮动系列专题之二：宏观事件驱动下的风格轮动",
+          "factor": "上证A股换手率：半年新高事件",
+          "code": "F011",
+          "factor_id": "V073",
+          "signal_type": "event",
+          "calc_method": "当上证A股换手率创半年新高时触发事件",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "half_year_max = sub_1.rolling(window=126).max().shift(1)\nhalf_year_min = sub_1.rolling(window=126).min().shift(1)\nexceed     = sub_1 / half_year_max - 1   # 超出新高的幅度，>0時觸發\nbelow      = sub_1 / half_year_min - 1   # 跌破新低的幅度，<0時觸發\nexceed_z = calc_rolling_zscore(exceed, window=504)\nbelow_z  = calc_rolling_zscore(below,  window=504)\nfactor = pd.Series(0.0, index=sub_1.index)\nfactor[sub_1 > half_year_max] =  exceed_z[sub_1 > half_year_max]   # 創新高 => 成長\nfactor[sub_1 < half_year_min] =  below_z[sub_1 < half_year_min]    # 創新低 => 價值（below_z此時為負）",
+          "docu": "A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "8841388.WI_windallA.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "原始研报要求上证A股换手率，本地以Wind全A(8841388.WI)代理；raw>0表示突破半年新高（成长信号），raw<0表示仍低于半年高点（偏价值/中性）；shift(1)避免当日自比；zscore统一量纲。"
+        },
+        {
+          "paper_id": "20180612-华宝证券-金融工程专题报告：价值、成长风格轮动与FOF策略构建",
+          "factor": "市场换手率状态",
+          "code": "F003",
+          "factor_id": "V074",
+          "signal_type": "state",
+          "calc_method": "过去60个交易日平均换手率，阈值1%",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = 全市场换手率序列（日频，以Wind全A代理）\n# 以偏离阈值的幅度作为连续因子值\nma60 = sub_1.rolling(window=60).mean()\nraw = ma60 - 1.0\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "A_data/data/style_indexes/8841388.WI_windallA.xlsx",
+          "data_field": "8841388.WI_windallA.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "换手率以Wind全A(8841388.WI)代理全市场；阈值1.0来自研报（原文1%）；raw = ma60 - 1.0保留连续偏离幅度，zscore统一量纲。"
+        },
+        {
+          "paper_id": "20190801-中泰证券-中泰时钟战术资产配置系列之三：成长价值风格轮动",
+          "factor": "相对换手率",
+          "code": "F003",
+          "factor_id": "V075",
+          "signal_type": "state",
+          "calc_method": "过去一个月中证500日均换手率 - 沪深300日均换手率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# sub_1 = 中证500换手率, sub_2 = 沪深300换手率（均为日频序列）\nma_500 = sub_1.rolling(window=21).mean()\nma_300 = sub_2.rolling(window=21).mean()\nraw = ma_500 - ma_300\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "中证500：A_data/data/index_eod.parquet（Indexcd=000905）；沪深300：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx",
+          "data_field": "中证500：index_eod.parquet中筛选Indexcd==000905，日期['Idxtrd01']，换手率['换手率']；沪深300：沪深300(000300.SH)-历史价格.xlsx，日期['交易日期']，换手率['换手率']",
+          "notes": "中证500从index_eod.parquet(Indexcd=000905)取换手率；raw为两指数月均换手率之差，保留连续幅度信息；zscore统一量纲。"
+        }
+      ]
+    }
+  }
+}

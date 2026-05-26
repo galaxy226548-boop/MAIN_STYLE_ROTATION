@@ -1,0 +1,89 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/working_multiple_factors_plan_completed_V071_V142.xlsx",
+  "converted_at": "2026-05-21T07:45:11",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 5,
+      "columns": [
+        "paper_id",
+        "factor",
+        "code",
+        "factor_id",
+        "signal_type",
+        "calc_method",
+        "signal_rule",
+        "condition",
+        "docu",
+        "data_field",
+        "notes"
+      ],
+      "records": [
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "SEMIVLOT_60D_DN因子比率（成长/价值）",
+          "code": "F012",
+          "factor_id": "V116",
+          "signal_type": "state",
+          "calc_method": "60天上行波动率与下行波动率之比，成分股合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# SEMIVLOT_60D_DN：下行半方差（负收益部分的标准差）\n# 成长/价值比率 >1 => 成长成分股下行风险相对更小（或上行更强） => 利好成长\n\nret_wide = S_DQ_ADJCLOSE.pct_change()   # 个股日收益率宽表\n\ndef semivol_down(ret_ser, window=60):\n    \"\"\"60日下行半波动率（仅负收益参与计算）\"\"\"\n    return ret_ser.rolling(window).apply(\n        lambda x: x[x < 0].std() if (x < 0).sum() > 1 else np.nan,\n        raw=True\n    )\n\nsemivol_dn = ret_wide.apply(lambda col: semivol_down(col, window=60))\n\n# 成长成分股等权平均\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = semivol_dn[growth_comps].mean(axis=1)\n\n# 价值成分股等权平均\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = semivol_dn[value_comps].mean(axis=1)\n\n# 比率 >1 => 成长下行波动 > 价值下行波动 => 价值更稳定 => 价值占优\n# 故需翻转：比率高 => value\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504) * (-1)",
+          "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']（399370.SZ/399371.SZ），成分股代码['S_CON_WINDCODE']，日期['TRADE_DT']；S_DQ_ADJCLOSE.parquet，日期['TRADE_DT']，个股收盘价[股票代码列]",
+          "notes": "研报名称为 SEMIVLOT_60D_DN（下行半波动率），成长/价值比率越高表示成长侧下行风险更大，方向与规范相反，condition 已乘以 -1。若研报实际定义为上行/下行比率（UP/DN），需重新确认方向。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "PVOLT20D_MA60D因子比率（成长/价值）",
+          "code": "F013",
+          "factor_id": "V117",
+          "signal_type": "state",
+          "calc_method": "20天波动率的60日均值，成分股合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# PVOLT20D_MA60D：个股 20 日价格波动率的 60 日移动平均\n# 成长/价值比率 >1 => 成长成分股波动率持续高于价值 => 成长行情活跃\n\nret_wide = S_DQ_ADJCLOSE.pct_change()\n\n# 20 日波动率的 60 日均值\npvolt = ret_wide.rolling(20).std().rolling(60).mean()\n\n# 成长成分股等权平均\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = pvolt[growth_comps].mean(axis=1)\n\n# 价值成分股等权平均\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = pvolt[value_comps].mean(axis=1)\n\n# 比率 >1 => 成长波动率更高 => 成长活跃（风险偏好上升）\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504)",
+          "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']（399370.SZ/399371.SZ），成分股代码['S_CON_WINDCODE']，日期['TRADE_DT']；S_DQ_ADJCLOSE.parquet，日期['TRADE_DT']，个股收盘价[股票代码列]",
+          "notes": "成长板块波动率高于价值通常对应风险偏好上升、成长行情，方向符合 >0 => growth，无需翻转。如实证检验发现方向相反，在 condition 末尾乘以 -1 即可。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "VOLTcs因子比率（成长/价值）",
+          "code": "F014",
+          "factor_id": "V118",
+          "signal_type": "state",
+          "calc_method": "指数成分股横截面波动率，合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# VOLTcs：截面波动率 = 当日所有成分股收益率的横截面标准差\n# 成长/价值截面波动率比率 >1 => 成长内部分化更大 => 个股效应主导 => 成长行情\n\nret_wide = S_DQ_ADJCLOSE.pct_change()\n\n# 成长成分股截面波动率（当日截面 std）\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = ret_wide[growth_comps].std(axis=1)   # 日截面 std（无需 rolling）\n\n# 价值成分股截面波动率\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = ret_wide[value_comps].std(axis=1)\n\n# 成长截面波动率 > 价值截面波动率 => 成长内部分化大 => 成长行情\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504)",
+          "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']（399370.SZ/399371.SZ），成分股代码['S_CON_WINDCODE']，日期['TRADE_DT']；S_DQ_ADJCLOSE.parquet，日期['TRADE_DT']，个股收盘价[股票代码列]",
+          "notes": "VOLTcs 为截面（cross-sectional）波动率，与时序波动率不同，无需 rolling window 即可逐日计算。成长截面波动率高于价值通常意味着成长内部有明显强弱分化，为成长行情特征，方向符合 >0 => growth，无需翻转。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "TVR_120D因子比率（成长/价值）",
+          "code": "F017",
+          "factor_id": "V119",
+          "signal_type": "state",
+          "calc_method": "120天换手率变动，成分股合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# 分别计算成长、价值指数成分股 120 日平均换手率\n# sub_1 = 成长成分股加权平均 TVR_120D\n# sub_2 = 价值成分股加权平均 TVR_120D\nraw = sub_1 / sub_2 - 1  # 比率偏离 1 的幅度，>0 表示成长换手率更高\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet（S_INFO_WINDCODE=399370）；价值成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet（S_INFO_WINDCODE=399371）；个股日频换手率：A_data/data/Daily/mktP.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']，成分股['S_CON_WINDCODE']，日期['TRADE_DT']，权重['I_WEIGHT']；mktP.parquet，股票代码['Stkcd']，日期['Trddt']，日换手率['Dnshrtrd']",
+          "notes": "sub_1/sub_2 为比率型，用 ratio-1 保留偏离幅度；换手率 120 日均值需对个股成分股按权重合成。本地 mktP.parquet 含 Dnshrtrd（日换手率），可滚动求 120 日均值后按成分股权重加权合成成长/价值两侧；AIndexHS300FreeWeight.parquet 存有成长(399370)/价值(399371)成分股权重。"
+        },
+        {
+          "paper_id": "20190401-国融证券-风格配置研究：成长价值风格的日历效应及风格轮动策略构建",
+          "factor": "TVR_20D_DN因子比率（成长/价值）",
+          "code": "F018",
+          "factor_id": "V120",
+          "signal_type": "state",
+          "calc_method": "20天上行换手率与下行换手率之比，成分股合成后取成长/价值比率",
+          "signal_rule": ">0 => growth; <0 => value",
+          "condition": "# TVR_20D_DN = 20日上行换手率 / 20日下行换手率（个股级别，再合成指数级别）\n# sub_1 = 成长成分股加权平均 TVR_20D_DN\n# sub_2 = 价值成分股加权平均 TVR_20D_DN\nraw = sub_1 / sub_2 - 1  # 比率偏离 1 的幅度\nfactor = calc_rolling_zscore(raw, window=504)",
+          "docu": "成长/价值成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频价格及成交量：A_data/data/Daily/mktP.parquet",
+          "data_field": "AIndexHS300FreeWeight.parquet，指数代码['S_INFO_WINDCODE']，成分股['S_CON_WINDCODE']，日期['TRADE_DT']，权重['I_WEIGHT']；mktP.parquet，股票代码['Stkcd']，日期['Trddt']，日换手率['Dnshrtrd']，日收益率['Dretwd']",
+          "notes": "上行换手率 = 当日收益率>0 时的换手率，下行换手率 = 当日收益率<0 时的换手率，需先区分涨跌日。mktP.parquet 中 Dretwd 为日收益率、Dnshrtrd 为换手率，可按涨跌日分别求 20 日滚动均值后计算比率。计算结果与 F017 思路相同，方向一致（成长换手率动能>价值则为正信号）。"
+        }
+      ]
+    }
+  }
+}

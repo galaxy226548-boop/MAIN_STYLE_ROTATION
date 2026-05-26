@@ -42,6 +42,7 @@ INPUT_INVENTORY_PATH = REFERENCE_DIR / "input_comb_inventory.xlsx"
 
 INPUT_FILE_SUFFIX = "signal_ls.parquet"
 SIGNAL_SUFFIX = "_signal"
+FORWARD_FILL_SOURCE_SIGNALS = True
 
 
 # ========== 2. Basic utilities ==========
@@ -175,6 +176,10 @@ def load_inventory_factor_index(
 
         relative_path = str(row.get("relative_path", "")).strip() or file_name
         path = input_dir / relative_path
+        if not path.exists():
+            warnings.append(f"Inventory entry points to a missing file and will be ignored: {path}")
+            continue
+
         columns = parse_inventory_columns(row.get("first_raw_values"))
         rows.append(
             {
@@ -351,9 +356,13 @@ def build_factor_matrix(
     source_df: pd.DataFrame,
     base_group: str,
     signal_group: str,
+    forward_fill_source_signals: bool = FORWARD_FILL_SOURCE_SIGNALS,
 ) -> tuple[pd.DataFrame, OrderedDict[str, list[str]], list[str]]:
     warnings: list[str] = []
     source_numeric = source_df.apply(pd.to_numeric, errors="coerce")
+    if forward_fill_source_signals:
+        source_numeric = source_numeric.ffill()
+
     groups = group_columns_by_first_letter(source_numeric.columns)
 
     if not groups:
@@ -435,12 +444,15 @@ def build_record(
     scan_record: dict[str, object],
     warnings: list[str],
     output_paths: dict[str, Path],
+    forward_fill_source_signals: bool = FORWARD_FILL_SOURCE_SIGNALS,
 ) -> dict[str, object]:
     first_level_logic = (
-        "Group selected source signal_ls columns by their shared first letter. For each date, compute "
-        "the equal-weight row-wise mean of non-null source signals in the group; if all source signals "
-        "in the group are NaN, the first-level factor is NaN. No z-score, division by 3, thresholding, "
-        "or clipping is applied."
+        "If forward_fill_source_signals is true, each selected source signal_ls column is "
+        "forward-filled before aggregation; leading NaN values remain NaN. Then group selected "
+        "source signal_ls columns by their shared first letter. For each date, compute the "
+        "equal-weight row-wise mean of non-null source signals in the group; if all source signals "
+        "in the group are NaN, the first-level factor is NaN. No z-score, division by 3, "
+        "thresholding, or clipping is applied."
     )
     signal_logic = "signal_ls equals the factor value exactly; no additional transformation is applied."
     final_logic = (
@@ -483,7 +495,11 @@ def build_record(
             "start_date": source_start,
             "end_date": source_end,
         },
-        "grouping_rule": "Selected source signals are grouped by the first character of each factor name.",
+        "grouping_rule": (
+            "Selected source signals are optionally forward-filled, then grouped by the first "
+            "character of each factor name."
+        ),
+        "forward_fill_source_signals": forward_fill_source_signals,
         "first_level_factors": first_level_factors,
         "final_factor": {
             "name": signal_group,
@@ -557,6 +573,7 @@ def main() -> None:
         source_df=source_df,
         base_group=base_group,
         signal_group=signal_group,
+        forward_fill_source_signals=FORWARD_FILL_SOURCE_SIGNALS,
     )
 
     warnings = scan_warnings + factor_warnings
@@ -575,6 +592,7 @@ def main() -> None:
         scan_record=scan_record,
         warnings=warnings,
         output_paths=output_paths,
+        forward_fill_source_signals=FORWARD_FILL_SOURCE_SIGNALS,
     )
 
     factor_df.to_parquet(output_paths["factor_parquet"])

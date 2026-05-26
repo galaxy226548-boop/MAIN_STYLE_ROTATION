@@ -1,0 +1,408 @@
+{
+  "signal_type": "state",
+  "batch_index": 3,
+  "total_batches": 5,
+  "record_count": 40,
+  "records": [
+    {
+      "factor_id": "V022",
+      "factor": "指数波动率差",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "growth_ret = growth_close.pct_change()\nvalue_ret  = value_close.pct_change()\nvol_growth = growth_ret.rolling(180).std()\nvol_value  = value_ret.rolling(180).std()\nfactor = (vol_growth - vol_value) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V025",
+      "factor": "波动率风格多空收益",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "growth_ret = growth_close.pct_change()\nvalue_ret  = value_close.pct_change()\nvol_growth = growth_ret.rolling(63).std()\nvol_value  = value_ret.rolling(63).std()\nfactor = (vol_growth-vol_value)*(-1)\nlong_ret  = np.where(vol_growth > vol_value, growth_ret, value_ret)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V026",
+      "factor": "上证指数3个月收益动量",
+      "signal_type": "state",
+      "docu": "AIndexEODPrices.feather",
+      "condition": "factor = calc_rolling_return(szzs_close, window=60, return_type=Config.RETURN_TYPE)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V027",
+      "factor": "动量效应",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_diff = (calc_rolling_return(value_close, window=255)\n            - calc_rolling_return(growth_close, window=255))\nfactor = calc_rolling_zscore(ret_diff, window=255) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V039",
+      "factor": "成长/价值价格动量",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ratio = growth_close / value_close\nfactor = ratio.pct_change(1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V043",
+      "factor": "成长价值近一季动量差",
+      "signal_type": "state",
+      "docu": "index_eod.parquet",
+      "condition": "ret_hs300   = calc_rolling_return(hs300_close,   window=63)\nret_zz1000  = calc_rolling_return(zz1000_close,  window=63)\nfactor = (ret_hs300 - ret_zz1000) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V051",
+      "factor": "创新高新低因子",
+      "signal_type": "state",
+      "docu": "风格指数成分股数据：AIndexHS300FreeWeight.parquet；个股收盘价数据：mktP.parquet",
+      "condition": "# 在成长指数成分股集合上计算\nis_3m_high = (close >= close.rolling(63).max())\nis_3m_low  = (close <= close.rolling(63).min())\namt_high_ratio = (amount * is_3m_high)[growth_components].sum(axis=1) \\\n                 / amount[growth_components].sum(axis=1)\namt_low_ratio  = (amount * is_3m_low)[growth_components].sum(axis=1) \\\n                 / amount[growth_components].sum(axis=1)\ngrowth_factor = amt_high_ratio - amt_low_ratio\n# 同样在价值指数成分股上算 value_factor\ndiff = growth_factor - value_factor\nfactor = diff.rolling(5).mean() - diff.rolling(250).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V059",
+      "factor": "价格相对强弱(成长价值)",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_diff = (calc_rolling_return(value_close,  window=40)\n            - calc_rolling_return(growth_close, window=40))\nfactor = calc_rolling_zscore(ret_diff, window=window_z) * (1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V060",
+      "factor": "收益率之差2M(平均每日）",
+      "signal_type": "state",
+      "docu": "index_eod.parquet",
+      "condition": "hs300_ret = hs300_close.pct_change(); cybz_ret = cybz_close.pct_change()\nret_dev = hs300_ret - cybz_ret\n# 经验CDF逆正态变换(基于 expanding 分位数)\nfactor = empirical_cdf_to_normal(ret_dev, method='expanding') * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V061",
+      "factor": "动量风格多空收益",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_hs300   = calc_rolling_return(hs300_close,   window=255)\nret_zz1000  = calc_rolling_return(zz1000_close,  window=255)\nfactor = (ret_hs300 - ret_zz1000) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V062",
+      "factor": "成长超额净值(中证2000/沪深300)",
+      "signal_type": "state",
+      "docu": "index_eod.parquet",
+      "condition": "calc_rolling_zscore(sub_1/sub_2, window=6) ",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V064",
+      "factor": "成长MACD",
+      "signal_type": "state",
+      "docu": "index_eod.parquet",
+      "condition": "sub_1 - sub_1.rolling(window=3).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V035",
+      "factor": "相对动量：相对强弱的一阶差分(滞后5期)",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_growth_1m = calc_rolling_return(growth_close, window=20)\nret_value_1m  = calc_rolling_return(value_close,  window=20)\nrs = ret_growth_1m - ret_value_1m\nfactor = rs - rs.shift(5)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V037",
+      "factor": "市场涨跌动量",
+      "signal_type": "state",
+      "docu": "AIndexEODPrices.feather",
+      "condition": "factor = calc_rolling_return(hs300_close, window=63, return_type='simple')",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V052",
+      "factor": "动量因子",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "rel_nv = growth_close / value_close\nfactor = rel_nv.rolling(20).mean() - rel_nv.rolling(180).mean()",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V053",
+      "factor": "反转效应",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_diff = (calc_rolling_return(value_close,  window=60)\n            - calc_rolling_return(growth_close, window=60))\nfactor = calc_rolling_zscore(ret_diff, window=180) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V054",
+      "factor": "滞后价值/成长收益差",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/prepared_data/growth_index.xlsx 价值指数：A_data/prepared_data/value_index.xlsx",
+      "condition": "ret_value  = value_close.pct_change()\nret_growth = growth_close.pct_change()\nfactor = (ret_value - ret_growth).shift(1) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V136",
+      "factor": "拥挤度因子",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 计算成长/价值日收益率\ngrowth_ret = growth_close.pct_change()\nvalue_ret = value_close.pct_change()\n# 相对波动率：成长/价值滚动60日标准差之比\nrel_vol = growth_ret.rolling(60).std() / value_ret.rolling(60).std()\n# 滚动1年分位数上下轨\nupper = rel_vol.rolling(252).quantile(0.95)\nlower = rel_vol.rolling(252).quantile(0.05)\n# 均线\nma5_close = (growth_close / value_close).rolling(5).mean()\nma20_close = (growth_close / value_close).rolling(20).mean()\n# 稀疏输出：对输入分别zscore后组合\nrel_vol_z = calc_rolling_zscore(rel_vol, window=252)\nupper_z = calc_rolling_zscore(upper, window=252)\nlower_z = calc_rolling_zscore(lower, window=252)\nma_diff_z = calc_rolling_zscore(ma5_close - ma20_close, window=252)\nfactor = pd.Series(0.0, index=rel_vol.index)\n# 价值拥挤（rel_vol极低且均线金叉）=> 偏成长\ncond_value_crowded = (rel_vol < lower) & (ma5_close > ma20_close)\nfactor[cond_value_crowded] = (lower_z - rel_vol_z)[cond_value_crowded].abs() * ma_diff_z[cond_value_crowded].abs()\n# 成长拥挤（rel_vol极高且均线死叉）=> 偏价值\ncond_growth_crowded = (rel_vol > upper) & (ma5_close < ma20_close)\nfactor[cond_growth_crowded] = -((rel_vol_z - upper_z)[cond_growth_crowded].abs() * ma_diff_z[cond_growth_crowded].abs())",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V137",
+      "factor": "中证全指成交额水平",
+      "signal_type": "state",
+      "docu": "A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx",
+      "condition": "raw = sub_1.rolling(63).mean() - sub_1.rolling(504).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V140",
+      "factor": "上证行业市盈率（月末值）",
+      "signal_type": "state",
+      "docu": "本地无上证行业ETF分行业PE专用文件；近似替代：A_data/data/style_indexes/D_中信行业指数+恒生指数_CN_041231_260320.xlsx（中信行业指数价格，可通过Astockdaily.parquet的行业PE字段替代）；行业PE数据：A_data/data/Daily/个股日交易衍生指标134252198/STK_MKT_DALYR.xlsx（含PE字段，需按行业聚合）",
+      "condition": "# 取月末值（resample到月末）\nsub_pe = sub_1.resample('ME').last()\n# 原始值作为因子，方向由SVM/模型自动学习\nfactor = sub_pe",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V141",
+      "factor": "估值强度指标",
+      "signal_type": "state",
+      "docu": "本地无上证行业ETF分行业PE专用文件；近似替代同F007：A_data/data/Daily/个股日交易衍生指标134252198/STK_MKT_DALYR.xlsx（含PE字段，需按行业聚合）",
+      "condition": "# 月末PE / 历史滚动均值，取对数差分以保留偏离程度\n# 窗口未明确，以36个月（约756日）为默认历史均值窗口\nsub_pe_monthly = sub_pe.resample('ME').last()\npe_mean = sub_pe_monthly.rolling(window=36).mean()\nraw = sub_pe_monthly / pe_mean - 1.0  # 偏离历史均值的比例\nfactor = calc_rolling_zscore(raw, window=36)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V131",
+      "factor": "成长价值相对强弱指数",
+      "signal_type": "state",
+      "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 注：研报意图为成长相对价值强弱，但calc_method写的是沪深300/中证2000\n# 沪深300偏大盘价值，中证2000偏小盘成长，比值上升=价值占优，需取反\n# 用国证成长(399370)/国证价值(399371)更贴合「成长价值相对强弱」语义\ngrowth_close = growth_index['close']  # 399370\nvalue_close  = value_index['close']   # 399371\nraw = growth_close / value_close\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V132",
+      "factor": "收益率相对波动",
+      "signal_type": "state",
+      "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 用国证成长(399370)/国证价值(399371)收益率波动率之比代替沪深300/中证2000\n# 成长波动率相对更大 => 资金博弈活跃 => 偏成长行情\ngrowth_ret = growth_close.pct_change()\nvalue_ret  = value_close.pct_change()\nwindow = 60  # 研报未明确，取60日作为默认值\nvol_growth = growth_ret.rolling(window).std()\nvol_value  = value_ret.rolling(window).std()\nraw = vol_growth / vol_value\n# 比值上升：成长波动率相对更大，暗示市场情绪偏成长\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V133",
+      "factor": "成交额相对波动",
+      "signal_type": "state",
+      "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 用国证成长(399370)/国证价值(399371)成交额波动率之比代替沪深300/中证2000\ngrowth_amount = growth_index['amount']\nvalue_amount  = value_index['amount']\nwindow = 60  # 研报未明确，取60日作为默认值\nvol_amt_growth = growth_amount.rolling(window).std()\nvol_amt_value  = value_amount.rolling(window).std()\nraw = vol_amt_growth / vol_amt_value\n# 成长成交额波动率相对更高 => 资金流动偏向成长 => signal>0\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V134",
+      "factor": "超买超卖因子",
+      "signal_type": "state",
+      "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 以RSI近似超买超卖判断（个股级RSI不可得时，用成长/价值指数RSI代理）\n# 方案A：用 growth_index RSI5D 与 value_index RSI5D 差值作为代理\ngrowth_rsi = growth_index['RSI_5D']\nvalue_rsi  = value_index['RSI_5D']\nraw_diff = growth_rsi - value_rsi\n# 5日均线与250日均线趋势判断，保留连续差值而非离散化\nshort_ma = raw_diff.rolling(5).mean()\nlong_ma  = raw_diff.rolling(250).mean()\n# 短均线超过长均线 => 成长侧超买强于价值侧 => growth信号\nfactor = short_ma - long_ma",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V135",
+      "factor": "上行趋势因子",
+      "signal_type": "state",
+      "docu": "A_data/data/Daily/mktP.parquet（个股收盘价，全市场）",
+      "condition": "# 逐日计算全市场个股收盘价是否位于20日均线上方\nma20 = close.rolling(20).mean()\nratio_above_ma20 = (close > ma20).groupby('Trddt').mean()\n# 短均线 - 长均线作为连续因子，正值=趋势向上=成长\nraw = ratio_above_ma20.rolling(5).mean() - ratio_above_ma20.rolling(250).mean()\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V126",
+      "factor": "成交量调整分化度 VADI_t",
+      "signal_type": "state",
+      "docu": "A_data/data/Daily/mktP.parquet（计算DI及个股成交量）；成长价值成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet",
+      "condition": "# VADI_t = DI_t * (M * vol_t / vol_t.rolling(M).mean())\n# M 研报未明确，参考常见设定取 M=12（月）\n# sub_vol = 全市场当月总成交量（个股成交量加总）\n# F001 = DI_t（已计算）\nM = 12\nvol_ratio = M * sub_vol / sub_vol.rolling(M).mean()\nraw = F001 * vol_ratio  # VADI，>0成长（高分化+高放量=>成长动能强）\nfactor = calc_rolling_zscore(raw, window=120)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V127",
+      "factor": "狭义风格拥挤度季均差分",
+      "signal_type": "state",
+      "docu": "沪深300收盘价：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证1000收盘价：A_data/data/style_indexes/中证1000(000852.SH)-历史价格.xlsx",
+      "condition": "# 从收盘价计算滚动21日波动率\nhs300_ret = hs300_close.pct_change()\nzz1000_ret = zz1000_close.pct_change()\nvol_hs300 = hs300_ret.rolling(21).std()\nvol_zz1000 = zz1000_ret.rolling(21).std()\nratio = vol_hs300 / vol_zz1000\n# 近一季（63日）均值 vs 上一季均值\nq_mean_cur  = ratio.rolling(63).mean()\nq_mean_prev = ratio.rolling(63).mean().shift(63)\nraw = q_mean_cur - q_mean_prev\n# signal_rule原文 <0 => value, >0 => growth，方向已对齐\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V130",
+      "factor": "头部拥挤度",
+      "signal_type": "state",
+      "docu": "国证成长(399370)：A_data/data/style_indexes/growth_index.xlsx；国证价值(399371)：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 头部拥挤度：以国证成长/价值的成交额滚动分位数差值作为连续代理\ngrowth_amount = growth_index_amount  # 国证成长(399370)周成交额\nvalue_amount  = value_index_amount   # 国证价值(399371)周成交额\n# 历史分位数（避免稀疏二值化）\nN = 52  # 1年滚动窗口（周频）\ngrowth_qrank = growth_amount.rolling(N).rank(pct=True)\nvalue_qrank  = value_amount.rolling(N).rank(pct=True)\n# 差值：成长侧分位数高于价值侧 => 成长拥挤 => signal>0（成长拥挤时短期反转或延续取决于研报逻辑）\n# 研报用于反转判断，拥挤的一侧可能反转，故此处取价值-成长（拥挤成长时为负，代表价值将占优）\n# signal_rule unknown，此处保持 growth_qrank - value_qrank（>0表明成长当前更热）\nraw = growth_qrank - value_qrank\nfactor = calc_rolling_zscore(raw, window=104)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V124",
+      "factor": "沪深两市成交额相对趋势",
+      "signal_type": "state",
+      "docu": "沪深300指数日频行情（代理上证成交额）：A_data/data/style_indexes/沪深300(000300.SH)-历史价格.xlsx；中证全指日频行情（代理深证成交额）：A_data/data/style_indexes/中证全指(000985.CSI)-历史价格.xlsx",
+      "condition": "# 研报原始规则：>0 => value；<0 => growth（高成交表示市场拥挤，价值防御）\n# 方向翻转：乘以-1 => >0代表低于均值=>成长\nsh_amt = sh_index['成交额(元,CNY)']\nsz_amt = sz_index['成交额(元,CNY)']\ntotal_amt = sh_amt + sz_amt\nraw = (total_amt - total_amt.rolling(23).mean()) * (-1)  # 翻转：低成交额=>正值=>成长\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V125",
+      "factor": "个股分化度 DI_t",
+      "signal_type": "state",
+      "docu": "A_data/data/Daily/mktP.parquet",
+      "condition": "# DI_t 本身无直接方向信号，用于构建 VADI（V126）\n# 若单独使用：高分化度倾向成长占优（成长股分散度更高时动量更强）\n# 月度截面：剔除涨跌幅首尾各10%后计算收益率标准差\nmonthly_ret = mktP_ret.resample('ME').sum()  # 日频Dretwd求和近似月收益\ntrimmed = monthly_ret.apply(lambda x: x[(x >= x.quantile(0.1)) & (x <= x.quantile(0.9))])\nDI = trimmed.std(axis=1)  # 横截面标准差\nraw = DI - DI.rolling(12).mean()  # 相对12个月均值偏离\nfactor = calc_rolling_zscore(raw, window=120)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V116",
+      "factor": "SEMIVLOT_60D_DN因子比率（成长/价值）",
+      "signal_type": "state",
+      "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+      "condition": "# SEMIVLOT_60D_DN：下行半方差（负收益部分的标准差）\n# 成长/价值比率 >1 => 成长成分股下行风险相对更小（或上行更强） => 利好成长\n\nret_wide = S_DQ_ADJCLOSE.pct_change()   # 个股日收益率宽表\n\ndef semivol_down(ret_ser, window=60):\n    \"\"\"60日下行半波动率（仅负收益参与计算）\"\"\"\n    return ret_ser.rolling(window).apply(\n        lambda x: x[x < 0].std() if (x < 0).sum() > 1 else np.nan,\n        raw=True\n    )\n\nsemivol_dn = ret_wide.apply(lambda col: semivol_down(col, window=60))\n\n# 成长成分股等权平均\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = semivol_dn[growth_comps].mean(axis=1)\n\n# 价值成分股等权平均\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = semivol_dn[value_comps].mean(axis=1)\n\n# 比率 >1 => 成长下行波动 > 价值下行波动 => 价值更稳定 => 价值占优\n# 故需翻转：比率高 => value\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504) * (-1)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V117",
+      "factor": "PVOLT20D_MA60D因子比率（成长/价值）",
+      "signal_type": "state",
+      "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+      "condition": "# PVOLT20D_MA60D：个股 20 日价格波动率的 60 日移动平均\n# 成长/价值比率 >1 => 成长成分股波动率持续高于价值 => 成长行情活跃\n\nret_wide = S_DQ_ADJCLOSE.pct_change()\n\n# 20 日波动率的 60 日均值\npvolt = ret_wide.rolling(20).std().rolling(60).mean()\n\n# 成长成分股等权平均\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = pvolt[growth_comps].mean(axis=1)\n\n# 价值成分股等权平均\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = pvolt[value_comps].mean(axis=1)\n\n# 比率 >1 => 成长波动率更高 => 成长活跃（风险偏好上升）\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V118",
+      "factor": "VOLTcs因子比率（成长/价值）",
+      "signal_type": "state",
+      "docu": "指数成分股权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频收盘价宽表：A_data/prepared_data/S_DQ_ADJCLOSE.parquet",
+      "condition": "# VOLTcs：截面波动率 = 当日所有成分股收益率的横截面标准差\n# 成长/价值截面波动率比率 >1 => 成长内部分化更大 => 个股效应主导 => 成长行情\n\nret_wide = S_DQ_ADJCLOSE.pct_change()\n\n# 成长成分股截面波动率（当日截面 std）\ngrowth_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399370.SZ'\n]['S_CON_WINDCODE']\nsub_1 = ret_wide[growth_comps].std(axis=1)   # 日截面 std（无需 rolling）\n\n# 价值成分股截面波动率\nvalue_comps = AIndexHS300FreeWeight[\n    AIndexHS300FreeWeight['S_INFO_WINDCODE'] == '399371.SZ'\n]['S_CON_WINDCODE']\nsub_2 = ret_wide[value_comps].std(axis=1)\n\n# 成长截面波动率 > 价值截面波动率 => 成长内部分化大 => 成长行情\nraw    = sub_1 / sub_2\nfactor = calc_rolling_zscore(raw - 1, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V119",
+      "factor": "TVR_120D因子比率（成长/价值）",
+      "signal_type": "state",
+      "docu": "成长成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet（S_INFO_WINDCODE=399370）；价值成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet（S_INFO_WINDCODE=399371）；个股日频换手率：A_data/data/Daily/mktP.parquet",
+      "condition": "# 分别计算成长、价值指数成分股 120 日平均换手率\n# sub_1 = 成长成分股加权平均 TVR_120D\n# sub_2 = 价值成分股加权平均 TVR_120D\nraw = sub_1 / sub_2 - 1  # 比率偏离 1 的幅度，>0 表示成长换手率更高\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V120",
+      "factor": "TVR_20D_DN因子比率（成长/价值）",
+      "signal_type": "state",
+      "docu": "成长/价值成分股及权重：A_data/data/index_data/AIndexHS300FreeWeight.parquet；个股日频价格及成交量：A_data/data/Daily/mktP.parquet",
+      "condition": "# TVR_20D_DN = 20日上行换手率 / 20日下行换手率（个股级别，再合成指数级别）\n# sub_1 = 成长成分股加权平均 TVR_20D_DN\n# sub_2 = 价值成分股加权平均 TVR_20D_DN\nraw = sub_1 / sub_2 - 1  # 比率偏离 1 的幅度\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V111",
+      "factor": "风格相对强弱二阶导数",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 第一步：计算成长/价值相对强弱比率\ngrowth_close = growth_index['close']\nvalue_close  = value_index['close']\nratio = growth_close / value_close\n\n# 第二步：一阶导数（移动窗口线性回归斜率）\nslope_series = ratio.rolling(window=window_w1).apply(\n    lambda x: np.polyfit(np.arange(len(x)), x, 1)[0], raw=True\n)\n\n# 第三步：二阶导数（对一阶导数序列再做移动窗口线性回归）\nraw = slope_series.rolling(window=window_w2).apply(\n    lambda x: np.polyfit(np.arange(len(x)), x, 1)[0], raw=True\n)\n# >0 加速向成长，<0 加速向价值，直接输出无需翻转\nfactor = calc_rolling_zscore(raw, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V106",
+      "factor": "风格相对强弱指数",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# 以国证成长(399370)为风格指数1，国证价值(399371)为风格指数2\n# ln(cum_return_growth+1) - ln(cum_return_value+1) = ln(close_g/close_g_base) - ln(close_v/close_v_base)\n# 等价于 log(close_g) - log(close_v) + const，直接用对数价格差表示相对强弱\nrs = np.log(close_growth) - np.log(close_value)   # >0成长相对强势\nfactor = calc_rolling_zscore(rs, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V107",
+      "factor": "风格相对强弱指数斜率 (β1)",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# rs为V106相对强弱指数：log(close_growth) - log(close_value)\nrs = np.log(close_growth) - np.log(close_value)\n# 移动窗口线性回归取斜率，窗口建议60个交易日\nbeta1 = calc_rolling_linear_regression_slope(rs, window=60)\n# β1>0表示成长相对强势趋势向上\nfactor = calc_rolling_zscore(beta1, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    },
+    {
+      "factor_id": "V108",
+      "factor": "风格相对强弱指数斜率变化率 (β2)",
+      "signal_type": "state",
+      "docu": "成长指数：A_data/data/style_indexes/growth_index.xlsx；价值指数：A_data/data/style_indexes/value_index.xlsx",
+      "condition": "# beta1为V107斜率序列\nrs = np.log(close_growth) - np.log(close_value)\nbeta1 = calc_rolling_linear_regression_slope(rs, window=60)\nbeta2 = beta1 - beta1.shift(1)   # β2 > 0 表示成长相对强势加速\nfactor = calc_rolling_zscore(beta2, window=504)",
+      "bar": null,
+      "ret_bar": null,
+      "result": null
+    }
+  ]
+}
