@@ -95,7 +95,7 @@
       "result": "2_mw47.92_L93"
     },
     {
-      "factor_id": "O004",
+      "factor_id": "C033",
       "factor": "美元指数收盘价",
       "signal_type": "state",
       "docu": "\"data_public/流动性/日频汇率.xlsx\"[\"美元指数\"]",
@@ -105,7 +105,7 @@
       "result": "1_mw42.60_L80"
     },
     {
-      "factor_id": "O005",
+      "factor_id": "C034",
       "factor": "美元指数（USDX）和90日/120日均线的关系，短期为现值，长期为90日或120日",
       "signal_type": "state",
       "docu": "\"data_public/流动性/日频汇率.xlsx\"[\"美元指数\"]",
@@ -115,7 +115,7 @@
       "result": null
     },
     {
-      "factor_id": "O006",
+      "factor_id": "I074",
       "factor": "十年到期国债收益率 美国",
       "signal_type": "state",
       "docu": "\"data_public/流动性/D_国债收益率_US_530430_260324.xlsx\"[\"美国:国债收益率:10年\"]",

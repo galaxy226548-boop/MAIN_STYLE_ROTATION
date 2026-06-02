@@ -1,0 +1,12 @@
+{
+  "growth_path": "/Users/chloezh/Projects/Fund_Analysis/D_analysis/input /growth_index.xlsx",
+  "value_path": "/Users/chloezh/Projects/Fund_Analysis/D_analysis/input /value_index.xlsx",
+  "gc007_path": "/Users/chloezh/Projects/Fund_Analysis/A_data/input/GC007_加权平均.xlsx",
+  "fund_nav_path": "/Users/chloezh/Projects/Fund_Analysis/A_data/prepared_data/主动权益型基金净值变化.xlsx",
+  "output_dir": "/Users/chloezh/Projects/Fund_Analysis/D_analysis/output/RBSA",
+  "window_weeks": 52,
+  "step_weeks": 4,
+  "min_fund_weeks": 104,
+  "min_r2": 0.7,
+  "benchmark_cost_rate": 0.001
+}

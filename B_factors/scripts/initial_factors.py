@@ -66,10 +66,10 @@ FACTOR_IDS = [
     "L021",
     "L023",
     "L024",
-    "O003",
-    "O004",
-    "O005",
-    "O006",
+    "I073",
+    "C033",
+    "C034",
+    "I074",
     "O008",
     "O009",
     "P004",
@@ -648,10 +648,10 @@ def generate_initial_factor_generator(data_df: pd.DataFrame) -> pd.DataFrame:
     _register_factor(raw_factor_df, factor_source_df, "L021_raw", calc_llt(m1_actual, 6))
     _register_factor(raw_factor_df, factor_source_df, "L023_raw", m0_actual)
     _register_factor(raw_factor_df, factor_source_df, "L024_raw", m1_minus_m0)
-    _register_factor(raw_factor_df, factor_source_df, "O003_raw", _z_ma_div(us_credit_spread_baml.sort_index().shift(2), 5, 250, 252, unit="days"))
-    _register_factor(raw_factor_df, factor_source_df, "O004_raw", data_yoy(calc_llt(usd_index, 5)))
-    _register_factor(raw_factor_df, factor_source_df, "O005_raw", _z_ma_div(usd_index, 5, 120, 252, unit="days"))
-    _register_factor(raw_factor_df, factor_source_df, "O006_raw", calc_rolling_zscore(us_t10 - calc_llt(us_t10, 12), window=252, min_periods=126))
+    _register_factor(raw_factor_df, factor_source_df, "I073_raw", _z_ma_div(us_credit_spread_baml.sort_index().shift(2), 5, 250, 252, unit="days"))
+    _register_factor(raw_factor_df, factor_source_df, "C033_raw", data_yoy(calc_llt(usd_index, 5)))
+    _register_factor(raw_factor_df, factor_source_df, "C034_raw", _z_ma_div(usd_index, 5, 120, 252, unit="days"))
+    _register_factor(raw_factor_df, factor_source_df, "I074_raw", calc_rolling_zscore(us_t10 - calc_llt(us_t10, 12), window=252, min_periods=126))
     _register_factor(raw_factor_df, factor_source_df, "O008_raw", data_diff(us_cpi_yoy))
     _register_factor(raw_factor_df, factor_source_df, "O009_raw", data_diff(us_unemployment))
 

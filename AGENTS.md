@@ -140,7 +140,7 @@ Treat these as data/output areas. Do not delete, overwrite, or bulk-regenerate t
 
 ## Additional Agent Notes
 
-- `build_factor_matrix.py` 是“运行当前已接入因子模块”的主入口。不要把新因子模块接入这里，除非用户明确希望它每次主入口运行时一起生成。
+- `build_factor_matrix.py` 是“运行当前已接入因子模块”的主入口。
 
 - `initial_factors.py` 当前表示：从 `factor_done.json` 中筛出的 `category == null`、且可从 `SY_Baseline/factor_done.py` 稳定复现的因子；其中已由 W004 覆盖的重复因子已经移除，不应再用新编号重复生成。
 
@@ -162,3 +162,21 @@ Treat these as data/output areas. Do not delete, overwrite, or bulk-regenerate t
 - 如果恢复或调整 `build_factor_matrix.py`，应保留当前 W004 行为，除非用户明确要求修改 W004。W004 应继续使用既有 `factor_id`。
 
 - 文档类任务默认只给建议内容；只有用户明确要求保存时，才写入本地文件。
+
+----快捷指令包----
+# gfgraph
+當我在 Codex prompt 中提到 gfgraph 時，請自動套用以下繪圖規範：
+
+畫圖的參考配色：
+RGB(68,114,169), RGB(79,129,189), RGB(189,205,229),
+RGB(232,56,13), RGB(247,150,70), RGB(253,190,148),
+RGB(127,127,127), RGB(166,166,166), RGB(217,217,217)。
+
+選擇顏色時，不要機械按順序使用，而要根據圖表目標選擇：
+- 若是成長 vs 價值、策略 vs 基準、兩類對比，優先使用藍色系 vs 橙色系；
+- 若是不同參數、不同窗口、不同閾值、不同風險預算比例，優先使用同一色系深淺變化；
+- 若是突出核心結論，核心線條用主藍或主橙紅，輔助線用灰色或淺色；
+- 零線、均值線、基準線、參考區間優先使用灰色系；
+- 如需補充顏色，需保持商務、克制、適合實習答辯 PPT，避免螢光色、彩虹色和過度飽和色。
+
+圖表需要適合直接放入 PPT：標題、坐標軸、圖例清晰；時間序列圖日期刻度合理；圖例不得遮擋數據；優先保證可讀性和結論表達。

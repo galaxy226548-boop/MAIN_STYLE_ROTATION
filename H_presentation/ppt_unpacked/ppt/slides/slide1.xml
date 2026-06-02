@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr>
+        <a:xfrm>
+          <a:off x="0" y="0"/>
+          <a:ext cx="0" cy="0"/>
+          <a:chOff x="0" y="0"/>
+          <a:chExt cx="0" cy="0"/>
+        </a:xfrm>
+      </p:grpSpPr>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="6" name="内容占位符 5"/>
+          <p:cNvSpPr>
+            <a:spLocks noGrp="1"/>
+          </p:cNvSpPr>
+          <p:nvPr>
+            <p:ph sz="quarter" idx="10"/>
+          </p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="574487" y="2916801"/>
+            <a:ext cx="8864787" cy="531625"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="4000" dirty="0"/>
+              <a:t>基于多因子框架的A股成长价值风格轮动模型研究</a:t>
+            </a:r>
+            <a:endParaRPr lang="zh-CN" altLang="en-US" sz="4000" dirty="0">
+              <a:latin typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+              <a:ea typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+            </a:endParaRPr>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="3" name="TextBox 5">
+            <a:extLst>
+              <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+                <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{1F900B63-504A-D5C8-4C0F-10FEBE2F8233}"/>
+              </a:ext>
+            </a:extLst>
+          </p:cNvPr>
+          <p:cNvSpPr txBox="1"/>
+          <p:nvPr/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="758761" y="3769419"/>
+            <a:ext cx="1615827" cy="276999"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+          <a:noFill/>
+          <a:ln>
+            <a:noFill/>
+          </a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0">
+            <a:spAutoFit/>
+          </a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="l"/>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1800" dirty="0">
+                <a:solidFill>
+                  <a:srgbClr val="FFFFFF">
+                    <a:alpha val="90000"/>
+                  </a:srgbClr>
+                </a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+                <a:cs typeface="Arial"/>
+              </a:rPr>
+              <a:t>汇报人：张诗媛</a:t>
+            </a:r>
+            <a:endParaRPr lang="zh-CN" sz="1800" dirty="0">
+              <a:solidFill>
+                <a:srgbClr val="FFFFFF">
+                  <a:alpha val="90000"/>
+                </a:srgbClr>
+              </a:solidFill>
+              <a:latin typeface="Arial"/>
+              <a:ea typeface="Microsoft YaHei"/>
+              <a:cs typeface="Arial"/>
+            </a:endParaRPr>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="4" name="TextBox 6">
+            <a:extLst>
+              <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+                <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{72A96115-92F9-9AC3-386F-16A0076F5022}"/>
+              </a:ext>
+            </a:extLst>
+          </p:cNvPr>
+          <p:cNvSpPr txBox="1"/>
+          <p:nvPr/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="758761" y="4135179"/>
+            <a:ext cx="1211870" cy="207749"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+          <a:noFill/>
+          <a:ln>
+            <a:noFill/>
+          </a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0">
+            <a:spAutoFit/>
+          </a:bodyPr>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="l"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1350" dirty="0">
+                <a:solidFill>
+                  <a:srgbClr val="FFFFFF">
+                    <a:alpha val="75000"/>
+                  </a:srgbClr>
+                </a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+                <a:cs typeface="Arial"/>
+              </a:rPr>
+              <a:t>指导老师：</a:t>
+            </a:r>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1350" dirty="0">
+                <a:solidFill>
+                  <a:srgbClr val="FFFFFF">
+                    <a:alpha val="75000"/>
+                  </a:srgbClr>
+                </a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+                <a:cs typeface="Arial"/>
+              </a:rPr>
+              <a:t>刘璐</a:t>
+            </a:r>
+            <a:endParaRPr lang="zh-CN" sz="1350" dirty="0">
+              <a:solidFill>
+                <a:srgbClr val="FFFFFF">
+                  <a:alpha val="75000"/>
+                </a:srgbClr>
+              </a:solidFill>
+              <a:latin typeface="Arial"/>
+              <a:ea typeface="Microsoft YaHei"/>
+              <a:cs typeface="Arial"/>
+            </a:endParaRPr>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:grpSp>
+        <p:nvGrpSpPr>
+          <p:cNvPr id="8" name="组合 7">
+            <a:extLst>
+              <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+                <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{E1521E5B-CB5F-B1D8-A14D-11370FAB6047}"/>
+              </a:ext>
+            </a:extLst>
+          </p:cNvPr>
+          <p:cNvGrpSpPr/>
+          <p:nvPr/>
+        </p:nvGrpSpPr>
+        <p:grpSpPr>
+          <a:xfrm>
+            <a:off x="762571" y="5788111"/>
+            <a:ext cx="1607820" cy="466970"/>
+            <a:chOff x="937260" y="5252085"/>
+            <a:chExt cx="1607820" cy="466970"/>
+          </a:xfrm>
+        </p:grpSpPr>
+        <p:sp>
+          <p:nvSpPr>
+            <p:cNvPr id="5" name="TextBox 7">
+              <a:extLst>
+                <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+                  <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{4BD83471-6E66-5EF4-8717-6EF2F431E68A}"/>
+                </a:ext>
+              </a:extLst>
+            </p:cNvPr>
+            <p:cNvSpPr txBox="1"/>
+            <p:nvPr/>
+          </p:nvSpPr>
+          <p:spPr>
+            <a:xfrm>
+              <a:off x="937260" y="5252085"/>
+              <a:ext cx="1607820" cy="243840"/>
+            </a:xfrm>
+            <a:prstGeom prst="rect">
+              <a:avLst/>
+            </a:prstGeom>
+            <a:noFill/>
+            <a:ln>
+              <a:noFill/>
+            </a:ln>
+          </p:spPr>
+          <p:txBody>
+            <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0">
+              <a:spAutoFit/>
+            </a:bodyPr>
+            <a:lstStyle/>
+            <a:p>
+              <a:pPr algn="l"/>
+              <a:r>
+                <a:rPr lang="zh-CN" sz="1200" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="60000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>广发基金量化支持部</a:t>
+              </a:r>
+            </a:p>
+          </p:txBody>
+        </p:sp>
+        <p:sp>
+          <p:nvSpPr>
+            <p:cNvPr id="7" name="TextBox 8">
+              <a:extLst>
+                <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+                  <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{C07BCD9C-1E67-8213-C7BE-21B09287A81B}"/>
+                </a:ext>
+              </a:extLst>
+            </p:cNvPr>
+            <p:cNvSpPr txBox="1"/>
+            <p:nvPr/>
+          </p:nvSpPr>
+          <p:spPr>
+            <a:xfrm>
+              <a:off x="938212" y="5545931"/>
+              <a:ext cx="993862" cy="173124"/>
+            </a:xfrm>
+            <a:prstGeom prst="rect">
+              <a:avLst/>
+            </a:prstGeom>
+            <a:noFill/>
+            <a:ln>
+              <a:noFill/>
+            </a:ln>
+          </p:spPr>
+          <p:txBody>
+            <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t" anchorCtr="0">
+              <a:spAutoFit/>
+            </a:bodyPr>
+            <a:lstStyle/>
+            <a:p>
+              <a:pPr algn="l"/>
+              <a:r>
+                <a:rPr lang="zh-CN" sz="1125" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="50000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>2026年</a:t>
+              </a:r>
+              <a:r>
+                <a:rPr lang="en-US" altLang="zh-CN" sz="1125" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="50000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>5</a:t>
+              </a:r>
+              <a:r>
+                <a:rPr lang="zh-CN" sz="1125" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="50000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>月2</a:t>
+              </a:r>
+              <a:r>
+                <a:rPr lang="en-US" altLang="zh-CN" sz="1125" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="50000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>5</a:t>
+              </a:r>
+              <a:r>
+                <a:rPr lang="zh-CN" sz="1125" dirty="0">
+                  <a:solidFill>
+                    <a:srgbClr val="FFFFFF">
+                      <a:alpha val="50000"/>
+                    </a:srgbClr>
+                  </a:solidFill>
+                  <a:latin typeface="Arial"/>
+                  <a:ea typeface="Microsoft YaHei"/>
+                  <a:cs typeface="Arial"/>
+                </a:rPr>
+                <a:t>日</a:t>
+              </a:r>
+            </a:p>
+          </p:txBody>
+        </p:sp>
+      </p:grpSp>
+    </p:spTree>
+  </p:cSld>
+  <p:clrMapOvr>
+    <a:masterClrMapping/>
+  </p:clrMapOvr>
+</p:sld>

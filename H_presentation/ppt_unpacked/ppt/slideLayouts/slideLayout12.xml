@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" userDrawn="1">
+  <p:cSld name="封面可选版式1">
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr>
+        <a:xfrm>
+          <a:off x="0" y="0"/>
+          <a:ext cx="0" cy="0"/>
+          <a:chOff x="0" y="0"/>
+          <a:chExt cx="0" cy="0"/>
+        </a:xfrm>
+      </p:grpSpPr>
+      <p:pic>
+        <p:nvPicPr>
+          <p:cNvPr id="25" name="Picture 2" descr="\\192.168.1.115\b 项目2组\G广发基金\2015\9月\0914\广发PPT母版素材\JPG\--08.jpg"/>
+          <p:cNvPicPr>
+            <a:picLocks noChangeAspect="1" noChangeArrowheads="1"/>
+          </p:cNvPicPr>
+          <p:nvPr userDrawn="1"/>
+        </p:nvPicPr>
+        <p:blipFill rotWithShape="1">
+          <a:blip r:embed="rId2" cstate="print"/>
+          <a:srcRect b="8791"/>
+          <a:stretch>
+            <a:fillRect/>
+          </a:stretch>
+        </p:blipFill>
+        <p:spPr bwMode="auto">
+          <a:xfrm>
+            <a:off x="-953" y="602845"/>
+            <a:ext cx="12192953" cy="6255155"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+          <a:noFill/>
+        </p:spPr>
+      </p:pic>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="26" name="矩形 25"/>
+          <p:cNvSpPr/>
+          <p:nvPr userDrawn="1"/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="0" y="1419226"/>
+            <a:ext cx="12192000" cy="5438775"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+          <a:gradFill flip="none" rotWithShape="1">
+            <a:gsLst>
+              <a:gs pos="0">
+                <a:schemeClr val="accent1">
+                  <a:shade val="30000"/>
+                  <a:satMod val="115000"/>
+                </a:schemeClr>
+              </a:gs>
+              <a:gs pos="50000">
+                <a:schemeClr val="accent1">
+                  <a:shade val="67500"/>
+                  <a:satMod val="115000"/>
+                </a:schemeClr>
+              </a:gs>
+              <a:gs pos="100000">
+                <a:schemeClr val="accent1">
+                  <a:shade val="100000"/>
+                  <a:satMod val="115000"/>
+                </a:schemeClr>
+              </a:gs>
+            </a:gsLst>
+            <a:lin ang="10800000" scaled="1"/>
+            <a:tileRect/>
+          </a:gradFill>
+          <a:ln>
+            <a:noFill/>
+          </a:ln>
+        </p:spPr>
+        <p:style>
+          <a:lnRef idx="2">
+            <a:schemeClr val="accent1">
+              <a:shade val="50000"/>
+            </a:schemeClr>
+          </a:lnRef>
+          <a:fillRef idx="1">
+            <a:schemeClr val="accent1"/>
+          </a:fillRef>
+          <a:effectRef idx="0">
+            <a:schemeClr val="accent1"/>
+          </a:effectRef>
+          <a:fontRef idx="minor">
+            <a:schemeClr val="lt1"/>
+          </a:fontRef>
+        </p:style>
+        <p:txBody>
+          <a:bodyPr rtlCol="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:endParaRPr lang="zh-CN" altLang="en-US" sz="1350" dirty="0">
+              <a:ea typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+            </a:endParaRPr>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="27" name="矩形 26"/>
+          <p:cNvSpPr/>
+          <p:nvPr userDrawn="1"/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="5534026" y="1288554"/>
+            <a:ext cx="6776589" cy="5569447"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+          <a:blipFill dpi="0" rotWithShape="1">
+            <a:blip r:embed="rId3">
+              <a:alphaModFix amt="10000"/>
+              <a:duotone>
+                <a:schemeClr val="bg2">
+                  <a:shade val="45000"/>
+                  <a:satMod val="135000"/>
+                </a:schemeClr>
+                <a:prstClr val="white"/>
+              </a:duotone>
+            </a:blip>
+            <a:srcRect/>
+            <a:stretch>
+              <a:fillRect/>
+            </a:stretch>
+          </a:blipFill>
+          <a:ln>
+            <a:noFill/>
+          </a:ln>
+        </p:spPr>
+        <p:style>
+          <a:lnRef idx="2">
+            <a:schemeClr val="accent1">
+              <a:shade val="50000"/>
+            </a:schemeClr>
+          </a:lnRef>
+          <a:fillRef idx="1">
+            <a:schemeClr val="accent1"/>
+          </a:fillRef>
+          <a:effectRef idx="0">
+            <a:schemeClr val="accent1"/>
+          </a:effectRef>
+          <a:fontRef idx="minor">
+            <a:schemeClr val="lt1"/>
+          </a:fontRef>
+        </p:style>
+        <p:txBody>
+          <a:bodyPr rtlCol="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:endParaRPr lang="zh-CN" altLang="en-US" sz="1350" dirty="0">
+              <a:ea typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+            </a:endParaRPr>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:pic>
+        <p:nvPicPr>
+          <p:cNvPr id="29" name="图片 28"/>
+          <p:cNvPicPr>
+            <a:picLocks noChangeAspect="1"/>
+          </p:cNvPicPr>
+          <p:nvPr userDrawn="1"/>
+        </p:nvPicPr>
+        <p:blipFill>
+          <a:blip r:embed="rId4" cstate="print">
+            <a:extLst>
+              <a:ext uri="{28A0092B-C50C-407E-A947-70E740481C1C}">
+                <a14:useLocalDpi xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" val="0"/>
+              </a:ext>
+            </a:extLst>
+          </a:blip>
+          <a:stretch>
+            <a:fillRect/>
+          </a:stretch>
+        </p:blipFill>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="8922319" y="465119"/>
+            <a:ext cx="2703583" cy="363944"/>
+          </a:xfrm>
+          <a:prstGeom prst="rect">
+            <a:avLst/>
+          </a:prstGeom>
+        </p:spPr>
+      </p:pic>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="32" name="内容占位符 31"/>
+          <p:cNvSpPr>
+            <a:spLocks noGrp="1"/>
+          </p:cNvSpPr>
+          <p:nvPr>
+            <p:ph sz="quarter" idx="10"/>
+          </p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="574488" y="2916801"/>
+            <a:ext cx="6645088" cy="531625"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr>
+            <a:noAutofit/>
+          </a:bodyPr>
+          <a:lstStyle>
+            <a:lvl1pPr marL="0" indent="0">
+              <a:buNone/>
+              <a:defRPr sz="3200" b="1">
+                <a:solidFill>
+                  <a:schemeClr val="bg1"/>
+                </a:solidFill>
+                <a:latin typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+                <a:ea typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+              </a:defRPr>
+            </a:lvl1pPr>
+          </a:lstStyle>
+          <a:p>
+            <a:pPr lvl="0"/>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" dirty="0"/>
+              <a:t>单击此处编辑母版文本样式</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="36" name="文本占位符 35"/>
+          <p:cNvSpPr>
+            <a:spLocks noGrp="1"/>
+          </p:cNvSpPr>
+          <p:nvPr>
+            <p:ph type="body" sz="quarter" idx="11"/>
+          </p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="574489" y="5414589"/>
+            <a:ext cx="3197785" cy="334963"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr>
+            <a:noAutofit/>
+          </a:bodyPr>
+          <a:lstStyle>
+            <a:lvl1pPr marL="0" indent="0">
+              <a:buNone/>
+              <a:defRPr sz="1800">
+                <a:solidFill>
+                  <a:schemeClr val="bg1"/>
+                </a:solidFill>
+                <a:latin typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+                <a:ea typeface="楷体" panose="02010609060101010101" pitchFamily="49" charset="-122"/>
+              </a:defRPr>
+            </a:lvl1pPr>
+          </a:lstStyle>
+          <a:p>
+            <a:pPr lvl="0"/>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" dirty="0"/>
+              <a:t>单击此处编辑母版文本样式</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+    <p:extLst>
+      <p:ext uri="{BB962C8B-B14F-4D97-AF65-F5344CB8AC3E}">
+        <p14:creationId xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="395660028"/>
+      </p:ext>
+    </p:extLst>
+  </p:cSld>
+  <p:clrMapOvr>
+    <a:masterClrMapping/>
+  </p:clrMapOvr>
+</p:sldLayout>

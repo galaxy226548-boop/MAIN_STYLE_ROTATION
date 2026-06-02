@@ -1,0 +1,12 @@
+﻿metric,value
+factor_start,2010-01-15
+factor_end,2026-03-20
+weekly_observations,783
+fund_count_after_104w_filter,710
+rbsa_rows,70051
+rbsa_valid_rows_r2_ge_threshold,29762
+period_count,161
+full_sample_correct_avg_return,0.022122036476673684
+full_sample_wrong_avg_return,-0.0038884781994353588
+full_sample_avg_return_diff,0.026010514676109042
+full_sample_benchmark_minus_wrong,0.010634855858543305

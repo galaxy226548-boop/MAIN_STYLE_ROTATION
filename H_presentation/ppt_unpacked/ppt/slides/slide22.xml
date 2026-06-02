@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr>
+        <a:xfrm>
+          <a:off x="0" y="0"/>
+          <a:ext cx="0" cy="0"/>
+          <a:chOff x="0" y="0"/>
+          <a:chExt cx="0" cy="0"/>
+        </a:xfrm>
+      </p:grpSpPr>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="100" name="BG"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="0" y="0"/><a:ext cx="12192000" cy="6858000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FAFBFC"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="101" name="BlueLine"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="723900"/><a:ext cx="9096375" cy="47625"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="102" name="RedLine"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="9572625" y="723900"/><a:ext cx="2238375" cy="47625"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="E8380D"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="103" name="HeaderTitle"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="295275"/><a:ext cx="8000000" cy="381000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="2000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>Part 5 回测结果</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="104" name="PageNum"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="11810000" y="6500000"/><a:ext cx="300000" cy="250000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="r"/>
+            <a:r>
+              <a:rPr lang="en-US" sz="900" dirty="0">
+                <a:solidFill><a:srgbClr val="B0B0B0"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+              </a:rPr>
+              <a:t>22</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="105" name="SlideTitle"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="819150"/><a:ext cx="11430000" cy="431800"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1600" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="2C3E50"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>月度胜率55.4%、超额年化5.2%、信息比率1.71——W008在16年回测中持续积累超额</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="200" name="PH200"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="1350000"/><a:ext cx="7800000" cy="4900000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill>
+          <a:ln w="9525"><a:solidFill><a:srgbClr val="AAAAAA"/></a:solidFill></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="666666"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>待补图表：W008净值曲线（策略vs基准）+ 净值比值图
+（原始图在 E_backtesting/Result/W008_signal_binary/）</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="200" name="STAT200"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="1350000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>55.42%</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>月度胜率</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="201" name="STAT201"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="2050000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>53.80%</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>Period胜率</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="202" name="STAT202"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="2750000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1.032</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>盈亏比</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="203" name="STAT203"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="3450000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>+0.22%/月</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>期望收益</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="204" name="STAT204"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="4150000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>5.20%</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>超额年化</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="205" name="STAT205"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="4850000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1.226</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>超额夏普</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="206" name="STAT206"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="8400000" y="5550000"/><a:ext cx="3400000" cy="640000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="91440" rIns="91440" bIns="91440" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="3200" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1.707</a:t>
+            </a:r>
+          </a:p>
+          <a:p>
+            <a:pPr algn="ctr"/>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>信息比率</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>

@@ -1,0 +1,1591 @@
+<?xml version="1.0" encoding="utf-8"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr>
+        <a:xfrm>
+          <a:off x="0" y="0"/>
+          <a:ext cx="0" cy="0"/>
+          <a:chOff x="0" y="0"/>
+          <a:chExt cx="0" cy="0"/>
+        </a:xfrm>
+      </p:grpSpPr>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="100" name="BG"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="0" y="0"/><a:ext cx="12192000" cy="6858000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FAFBFC"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="101" name="BlueLine"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="723900"/><a:ext cx="9096375" cy="47625"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="102" name="RedLine"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="9572625" y="723900"/><a:ext cx="2238375" cy="47625"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="E8380D"/></a:solidFill>
+          <a:ln><a:noFill/></a:ln>
+        </p:spPr>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="103" name="HeaderTitle"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="295275"/><a:ext cx="8000000" cy="381000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="2000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>Part 6 延伸验证</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="104" name="PageNum"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="11810000" y="6500000"/><a:ext cx="300000" cy="250000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:pPr algn="r"/>
+            <a:r>
+              <a:rPr lang="en-US" sz="900" dirty="0">
+                <a:solidFill><a:srgbClr val="B0B0B0"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+              </a:rPr>
+              <a:t>28</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="105" name="SlideTitle"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="819150"/><a:ext cx="11430000" cy="431800"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1600" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="2C3E50"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008在100:1极端预算下夏普仍为1.05，HS300在50:1时夏普已跌至0.66</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="210" name="TB210"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="1350000"/><a:ext cx="2000000" cy="450000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>组合</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="211" name="TB211"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="1350000"/><a:ext cx="2400000" cy="450000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>风险预算比</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="212" name="TB212"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="1350000"/><a:ext cx="2500000" cy="450000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>年化收益</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="213" name="TB213"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="1350000"/><a:ext cx="2300000" cy="450000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>最大回撤</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="214" name="TB214"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="1350000"/><a:ext cx="2000000" cy="450000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="4472A9"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>夏普</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="220" name="TB220"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="1800000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="221" name="TB221"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="1800000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="222" name="TB222"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="1800000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="223" name="TB223"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="1800000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="224" name="TB224"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="1800000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="225" name="TB225"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="2190000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="226" name="TB226"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="2190000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1:5</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="227" name="TB227"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="2190000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="228" name="TB228"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="2190000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="229" name="TB229"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="2190000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="230" name="TB230"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="2580000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="231" name="TB231"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="2580000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>10:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="232" name="TB232"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="2580000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~6%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="233" name="TB233"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="2580000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~-5%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="234" name="TB234"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="2580000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~0.9</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="235" name="TB235"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="2970000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="236" name="TB236"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="2970000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>20:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="237" name="TB237"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="2970000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~6%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="238" name="TB238"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="2970000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~-8%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="239" name="TB239"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="2970000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~0.8</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="240" name="TB240"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="3360000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FFF3F0"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="241" name="TB241"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="3360000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FFF3F0"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>50:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="242" name="TB242"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="3360000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FFF3F0"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~7%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="243" name="TB243"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="3360000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FFF3F0"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>-13.23%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="244" name="TB244"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="3360000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="FFF3F0"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>0.66</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="245" name="TB245"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="3750000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>HS300</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="246" name="TB246"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="3750000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>100:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="247" name="TB247"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="3750000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~8%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="248" name="TB248"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="3750000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~-25%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="249" name="TB249"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="3750000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~0.5</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="250" name="TB250"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="4140000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="251" name="TB251"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="4140000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="252" name="TB252"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="4140000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="253" name="TB253"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="4140000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="254" name="TB254"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="4140000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="255" name="TB255"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="4530000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="256" name="TB256"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="4530000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1:5</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="257" name="TB257"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="4530000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="258" name="TB258"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="4530000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="259" name="TB259"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="4530000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="260" name="TB260"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="4920000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="261" name="TB261"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="4920000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>10:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="262" name="TB262"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="4920000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="263" name="TB263"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="4920000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="264" name="TB264"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="4920000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="265" name="TB265"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="5310000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="266" name="TB266"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="5310000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>20:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="267" name="TB267"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="5310000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="268" name="TB268"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="5310000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="269" name="TB269"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="5310000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="270" name="TB270"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="5700000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="271" name="TB271"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="5700000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>50:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="272" name="TB272"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="5700000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="273" name="TB273"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="5700000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="274" name="TB274"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="5700000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="EDF2F8"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>[待补]</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="275" name="TB275"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="6090000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0FFF4"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>W008</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="276" name="TB276"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="2500000" y="6090000"/><a:ext cx="2400000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0FFF4"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>100:1</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="277" name="TB277"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="5000000" y="6090000"/><a:ext cx="2500000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0FFF4"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>~14%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="278" name="TB278"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="7600000" y="6090000"/><a:ext cx="2300000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0FFF4"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>-5.94%</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="279" name="TB279"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="10000000" y="6090000"/><a:ext cx="2000000" cy="370000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:solidFill><a:srgbClr val="F0FFF4"/></a:solidFill><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" altLang="en-US" sz="950" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>1.05</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+      <p:sp>
+        <p:nvSpPr><p:cNvPr id="290" name="MLT290"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="381000" y="6500000"/><a:ext cx="11430000" cy="900000"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+          <a:noFill/><a:ln><a:noFill/></a:ln>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="t"/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" b="1" dirty="0">
+                <a:solidFill><a:srgbClr val="2C3E50"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>三条结论</a:t>
+            </a:r>
+          </a:p>          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>① W008收益随权益预算单调递增，HS300基本持平</a:t>
+            </a:r>
+          </a:p>          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>② W008回撤平稳（100:1仅-5.94%），HS300在极端预算骤升</a:t>
+            </a:r>
+          </a:p>          <a:p>
+            <a:r>
+              <a:rPr lang="zh-CN" sz="1000" dirty="0">
+                <a:solidFill><a:srgbClr val="4A5568"/></a:solidFill>
+                <a:latin typeface="Arial"/>
+                <a:ea typeface="Microsoft YaHei"/>
+              </a:rPr>
+              <a:t>③ W008夏普在高预算仍&gt;1，HS300在50:1已跌至0.66</a:t>
+            </a:r>
+          </a:p>        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+</p:sld>
