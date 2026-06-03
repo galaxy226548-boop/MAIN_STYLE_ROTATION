@@ -22,6 +22,16 @@ from factor_utils import (
     data_yoy,
     read_prepared_series,
 )
+from factor_transforms import (
+    calc_rolling_zscore_time as _calc_rolling_zscore_time,
+    data_deviation as _data_deviation,
+    rolling_quantile_value as _rolling_quantile_value,
+    time_mean as _time_mean,
+    time_window_apply as _time_window_apply,
+    trailing_time_window as _trailing_time_window,
+    z_data_deviation as _z_data_deviation,
+    z_ma_div as _z_ma_div,
+)
 
 
 OUTPUT_PREFIX = "initial_factors"
@@ -102,178 +112,6 @@ SKIPPED_FACTORS = {
     "L013": "factor_done.py 中找不到精确 L32_2_raw 原始实现",
     "V014": "factor_done.py 中找不到精确 V47_raw 原始实现",
 }
-
-
-def _trailing_time_window(
-    series: pd.Series,
-    dt: pd.Timestamp,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-) -> pd.Series:
-    if months is not None:
-        start = dt - pd.DateOffset(months=int(round(months)))
-    elif years is not None:
-        start = dt - pd.DateOffset(years=int(round(years)))
-    elif days is not None:
-        start = dt - pd.Timedelta(days=float(days))
-    else:
-        raise ValueError("one of months, years, or days must be provided")
-    return series.loc[(series.index > start) & (series.index <= dt)]
-
-
-def _time_window_apply(
-    series: pd.Series,
-    func,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-    min_periods: int = 1,
-) -> pd.Series:
-    s = pd.to_numeric(series, errors="coerce").dropna().sort_index()
-    s.index = pd.to_datetime(s.index)
-    values = []
-    for dt in s.index:
-        window = _trailing_time_window(s, dt, months=months, years=years, days=days)
-        values.append(np.nan if len(window) < min_periods else func(window))
-    return pd.Series(values, index=s.index, dtype="float64")
-
-
-def _time_mean(
-    series: pd.Series,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-    min_periods: int = 1,
-) -> pd.Series:
-    return _time_window_apply(
-        series,
-        lambda window: window.mean(),
-        months=months,
-        years=years,
-        days=days,
-        min_periods=min_periods,
-    )
-
-
-def _rolling_quantile_value(
-    series: pd.Series,
-    target_quantile: float,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-    min_periods: int = 1,
-) -> pd.Series:
-    return _time_window_apply(
-        series,
-        lambda window: window.quantile(target_quantile),
-        months=months,
-        years=years,
-        days=days,
-        min_periods=min_periods,
-    )
-
-
-def _calc_rolling_zscore_time(
-    series: pd.Series,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-    min_periods: int = 1,
-) -> pd.Series:
-    s = pd.to_numeric(series, errors="coerce").dropna().sort_index()
-    s.index = pd.to_datetime(s.index)
-    values = []
-    for dt in s.index:
-        window = _trailing_time_window(s, dt, months=months, years=years, days=days)
-        if len(window) < min_periods:
-            values.append(np.nan)
-            continue
-        rolling_std = window.std()
-        if pd.isna(rolling_std) or np.isclose(rolling_std, 0):
-            values.append(np.nan)
-        else:
-            values.append((s.loc[dt] - window.mean()) / rolling_std)
-    return pd.Series(values, index=s.index, dtype="float64")
-
-
-def _data_deviation(
-    series: pd.Series,
-    *,
-    months: int | float | None = None,
-    years: int | float | None = None,
-    days: int | float | None = None,
-    min_periods: int = 1,
-) -> pd.Series:
-    s = pd.to_numeric(series, errors="coerce").sort_index()
-    rolling_mean = _time_mean(
-        s,
-        months=months,
-        years=years,
-        days=days,
-        min_periods=min_periods,
-    )
-    return s - rolling_mean.reindex(s.index)
-
-
-def _z_data_deviation(
-    series: pd.Series,
-    *,
-    dev_months: int | float | None = None,
-    dev_years: int | float | None = None,
-    dev_days: int | float | None = None,
-    z_months: int | float | None = None,
-    z_years: int | float | None = None,
-    z_days: int | float | None = None,
-    dev_min_periods: int = 1,
-    z_min_periods: int = 1,
-) -> pd.Series:
-    deviation = _data_deviation(
-        series,
-        months=dev_months,
-        years=dev_years,
-        days=dev_days,
-        min_periods=dev_min_periods,
-    )
-    return _calc_rolling_zscore_time(
-        deviation,
-        months=z_months,
-        years=z_years,
-        days=z_days,
-        min_periods=z_min_periods,
-    )
-
-
-def _z_ma_div(
-    series: pd.Series,
-    short_window: int | float,
-    long_window: int | float,
-    z_window: int | float,
-    *,
-    unit: str = "months",
-    short_min_periods: int | None = None,
-    long_min_periods: int | None = None,
-    z_min_periods: int | None = None,
-) -> pd.Series:
-    if unit == "days":
-        short_min_periods = 1 if short_window == 1 else short_min_periods or max(2, int(round(short_window / 30 / 2)))
-        long_min_periods = long_min_periods or max(6, int(round(long_window / 30 / 2)))
-        z_min_periods = z_min_periods or max(12, int(round(z_window / 30 / 2)))
-        short_ma = series.copy() if short_window == 1 else _time_mean(series, days=short_window, min_periods=short_min_periods)
-        long_ma = _time_mean(series, days=long_window, min_periods=long_min_periods)
-        return _calc_rolling_zscore_time(short_ma - long_ma, days=z_window, min_periods=z_min_periods)
-
-    short_min_periods = 1 if short_window == 1 else short_min_periods or max(2, int(short_window) // 2)
-    long_min_periods = long_min_periods or max(3, int(long_window) // 2)
-    z_min_periods = z_min_periods or max(6, int(z_window) // 2)
-    short_ma = series.copy() if short_window == 1 else _time_mean(series, months=short_window, min_periods=short_min_periods)
-    long_ma = _time_mean(series, months=long_window, min_periods=long_min_periods)
-    return _calc_rolling_zscore_time(short_ma - long_ma, months=z_window, min_periods=z_min_periods)
 
 
 def _expectation(

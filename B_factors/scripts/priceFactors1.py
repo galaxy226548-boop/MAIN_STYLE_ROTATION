@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -20,19 +19,20 @@ from factor_utils import (
     PROJECT_ROOT,
     _as_numeric,
     _register_factor,
-    build_threshold_signal_ls_df,
     calc_llt,
     calc_rolling_zscore,
-    load_benchmark_index,
-    load_default_data,
     load_prepared_table,
-    mount_factor_source_frame,
     normalize_trade_dt,
     prepared_data_dir,
-    save_factor_outputs,
-    save_generated_factor_records,
-    validate_prepared_mapping,
 )
+from factor_metadata import (
+    append_record_note as _append_note,
+    build_metadata_from_records,
+    load_plan_records,
+    normalize_plan_text as _normalize_plan_text,
+)
+from factor_pipeline_runner import run_factor_module_pipeline
+from factor_transforms import as_float_series as _as_float_series
 
 
 OUTPUT_PREFIX = "priceFactors1"
@@ -115,34 +115,13 @@ _INDEX_EOD_CACHE: pd.DataFrame | None = None
 _STYLE_COMPONENT_CACHE: dict[str, dict[pd.Timestamp, list[str]]] | None = None
 
 
-def _normalize_plan_text(value: object) -> str:
-    return str(value or "").strip()
-
-
 def _load_plan_records() -> list[dict[str, object]]:
-    payload = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
-    records: list[dict[str, object]] = []
-    source_file = str(PLAN_PATH.relative_to(PROJECT_ROOT))
-    for sheet_name, sheet_meta in payload.get("sheets", {}).items():
-        for record in sheet_meta.get("records", []):
-            factor_id = str(record.get("factor_id") or "")
-            if factor_id not in PLAN_FACTOR_IDS:
-                continue
-            item = dict(record)
-            item["_source_file"] = source_file
-            item["_source_sheet"] = sheet_name
-            records.append(_record_with_actual_fields(item))
-
-    found = {str(record["factor_id"]) for record in records}
-    missing = [factor_id for factor_id in PLAN_FACTOR_IDS if factor_id not in found]
-    if missing:
-        raise ValueError(f"working_multiple_factors_plan.json missing implemented records: {missing}")
-    return records
-
-
-def _append_note(record: dict[str, object], note: str) -> None:
-    existing = _normalize_plan_text(record.get("notes"))
-    record["notes"] = f"{existing} {note}".strip()
+    return load_plan_records(
+        plan_path=PLAN_PATH,
+        project_root=PROJECT_ROOT,
+        factor_ids=PLAN_FACTOR_IDS,
+        record_adjuster=_record_with_actual_fields,
+    )
 
 
 def _record_with_actual_fields(record: dict[str, object]) -> dict[str, object]:
@@ -167,17 +146,7 @@ def metadata_from_priceFactors1_records(records: list[dict[str, object]]) -> dic
         }
         for factor_id in LEGACY_FACTOR_IDS
     }
-    metadata.update(
-        {
-            str(record["factor_id"]): {
-                "signal_type": _normalize_plan_text(record.get("signal_type")) or "state",
-                "bar": 0.0,
-                "factor": record.get("factor"),
-                "progress": record.get("progress"),
-            }
-            for record in records
-        }
-    )
+    metadata.update(build_metadata_from_records(records))
     return metadata
 
 
@@ -189,12 +158,6 @@ def _index_code_key(value: object) -> str:
 def _stock_code_key(value: object) -> str:
     text = str(value or "").strip().upper()
     return text.split(".")[0].zfill(6)
-
-
-def _as_float_series(series: pd.Series, index: pd.Series | pd.DatetimeIndex, name: str) -> pd.Series:
-    out = pd.Series(pd.to_numeric(series, errors="coerce").to_numpy(), index=pd.to_datetime(index), name=name)
-    out = out[out.index.notna()].sort_index()
-    return out[~out.index.duplicated(keep="last")].astype("float64")
 
 
 def _load_excel_close(file_name: str, date_col: str, close_col: str, name: str) -> pd.Series:
@@ -555,32 +518,13 @@ def _print_factor_output_summary(label: str, mounted_factor_df: pd.DataFrame, si
 
 
 def main() -> None:
-    validate_prepared_mapping()
-    data_df, market_df = load_default_data()
-    benchmark_index = load_benchmark_index()
-
-    factor_source_df, selected_records = generate_priceFactors1_factors(data_df)
-    metadata = metadata_from_priceFactors1_records(selected_records)
-    mounted_normalized_factor_df = mount_factor_source_frame(
-        factor_source_df=factor_source_df,
-        market_df=market_df,
-        benchmark_index=benchmark_index,
-        metadata=metadata,
-    )
-    signal_ls_df = build_threshold_signal_ls_df(mounted_normalized_factor_df, metadata)
-    output_paths = save_factor_outputs(
-        mounted_normalized_factor_df=mounted_normalized_factor_df,
-        signal_ls_df=signal_ls_df,
-        missing_bar_defaults=[],
+    # 完整挂载、信号生成和保存流程交给公共 runner；本模块只保留价格因子公式与 metadata 口径。
+    run_factor_module_pipeline(
         output_prefix=OUTPUT_PREFIX,
-        write_empty_missing_bar_file=False,
+        generate_factors=generate_priceFactors1_factors,
+        metadata_builder=metadata_from_priceFactors1_records,
+        print_summary=_print_factor_output_summary,
     )
-
-    for label, path in output_paths.items():
-        print(f"{label} saved to:", path)
-    generated_path = save_generated_factor_records(selected_records, OUTPUT_PREFIX)
-    print("generated records saved to:", generated_path)
-    _print_factor_output_summary(OUTPUT_PREFIX, mounted_normalized_factor_df, signal_ls_df)
 
 
 if __name__ == "__main__":

@@ -1,29 +1,27 @@
 # AGENTS.md
 
-## Project Overview
+## 项目概述
+这是一个基于 Python 的风格轮动研究/回测项目。它构建因子值和多空信号，将信号转换为成长/价值目标位，运行固定回测，计算 IC 诊断，并可选择对因子/信号进行分组。
 
-This is a Python style-rotation research/backtesting project. It builds factor values and long/short signals, converts signals to growth/value target positions, runs fixed backtests, calculates IC diagnostics, and optionally groups factors/signals.
+主要本地环境：
+- Python：3.12.4，通过 `.venv_mktp/bin/python` 安装
+- 本地虚拟环境中已发现的依赖项：`pandas`、`numpy`、`pyarrow`、`openpyxl`、`xlsxwriter`、`matplotlib`、`scipy`、`statsmodels`、`seaborn`、`tqdm`
+- 仓库中没有 `requirements.txt`、`pyproject.toml` 或 lockfile 文件。依赖项的安装/复现尚待确认。
 
-Primary local environment:
+## 目录结构
 
-- Python: 3.12.4 via `.venv_mktp/bin/python`
-- Observed dependencies in the local venv: `pandas`, `numpy`, `pyarrow`, `openpyxl`, `xlsxwriter`, `matplotlib`, `scipy`, `statsmodels`, `seaborn`, `tqdm`
-- There is no `requirements.txt`, `pyproject.toml`, or lockfile in the repo. Dependency installation/reproduction is 待确认.
-
-## Directory Map
-
-- `A_data/`: raw, prepared, reference, and output data. Large/local data area; many paths are gitignored.
-- `B_factors/`: factor generation.
-  - `scripts/`: factor scripts and shared factor utilities.
-  - `reference/`: factor metadata and engineering rules.
-  - `output/`: generated factor matrices and signal files.
-- `C_positions/`: converts `signal_ls` matrices into per-factor target-position files; contains benchmark position references.
-- `D_analysis/`: IC analysis, IC scoring, negative-IC checks, and generated analysis outputs.
-- `E_backtesting/`: fixed backtest engine and result outputs.
-- `F_grouping/`: combines factors/signals into grouped strategies.
-- `G_engine/`: orchestration and migration/checking utilities, especially `run_factor_pipeline.py`.
-- `SY_Baseline/`: legacy baseline scripts/configs/notebooks used as references and import sources.
-- `SY_Reference/`: project docs and data/module references.
+- `A_data/`：原始数据、预处理数据、参考数据和输出数据。大型/本地数据区域；许多路径已被 .gitignore 忽略。
+- `B_factors/`：因子生成。
+- `scripts/`：因子脚本和共享因子工具。
+- `reference/`：因子元数据和工程规则。
+- `output/`：生成的因子矩阵和信号文件。
+- `C_positions/`：将 `signal_ls` 矩阵转换为每个因子的目标位置文件；包含基准位置参考。
+- `D_analysis/`：IC 分析、IC 评分、负 IC 检查和生成的分析输出。
+- `E_backtesting/`：修复回测引擎和结果输出。
+- `F_grouping/`：将因子/信号组合成分组策略。
+- `G_engine/`：编排和迁移/检查工具，特别是 `run_factor_pipeline.py`。
+- `SY_Baseline/`：用作参考和导入源的旧版基线脚本/配置/notebook。
+- `SY_Reference/`：项目文档和数据/模块引用。
 
 ## Common Commands
 
@@ -77,28 +75,27 @@ Quality commands:
 - Typecheck command: 待确认. No mypy/pyright config was found.
 - Build command: 待确认. This repo appears script-driven rather than package-build-driven.
 
-## Business Flow
+## 业务流程
+1. `A_data` 准备可重用的数据表，特别是 `A_data/prepared_data` 目录下的文件。
+2. `B_factors` 生成原始因子源帧，将其挂载/归一化到交易日期，并创建 `signal_ls` 矩阵。
+3. `C_positions` 将 `signal_ls` 映射到增长/价值目标权重。
+4. `E_backtesting` 对目标仓位文件运行稳定的回测框架。
+5. `D_analysis` 对已挂载的归一化因子运行 IC 分析和诊断。
+6. `F_grouping` 将多个单因子或信号组合成复合策略。
+7. `G_engine/run_factor_pipeline.py` 协调因子/信号文件对的仓位生成、回测和 IC 分析。
 
-1. `A_data` prepares reusable market/data tables, especially files under `A_data/prepared_data`.
-2. `B_factors` generates raw factor source frames, mounts/normalizes them to market dates, and creates `signal_ls` matrices.
-3. `C_positions` maps `signal_ls` to growth/value target weights.
-4. `E_backtesting` runs the stable backtest framework on target-position files.
-5. `D_analysis` runs IC analysis and diagnostics for mounted normalized factors.
-6. `F_grouping` groups multiple single factors or signals into composite strategies.
-7. `G_engine/run_factor_pipeline.py` orchestrates position generation, backtesting, and IC analysis for a factor/signal file pair.
-
-## Code Style And Naming
-
-- Python scripts use `from __future__ import annotations`, `pathlib.Path`, and `argparse` for CLI entry points.
-- Constants are usually uppercase, e.g. `PROJECT_ROOT`, `DEFAULT_SIGNAL_PATH`, `OUTPUT_DIR`.
-- DataFrame variables usually end in `_df`; series often end in `_series`.
-- Factor output conventions:
-  - mounted normalized factors: `*_mounted_normalized_factors.parquet` plus matching `.xlsx`
-  - signals: `*_signal_ls.parquet` plus matching `.xlsx`
-  - per-factor positions: `{factor_id}_position.xlsx`
-- Factor matrix columns should use `factor_id`, not display names or `code`.
-- Prefer adding new research-specific modules as English `B_factors/scripts/paper_*.py` files, then wiring them through `B_factors/scripts/build_factor_matrix.py`.
-- Keep common changes in `B_factors/scripts/factor_utils.py` backward-compatible.
+## 代码风格和命名
+- Python 脚本使用“from __future__ import 注解”、“pathlib.Path”和“argparse”作为 CLI 入口点。
+- 常量通常是大写的，例如`PROJECT_ROOT`、`DEFAULT_SIGNAL_PATH`、`OUTPUT_DIR`。
+- DataFrame 变量通常以 `_df` 结尾；系列通常以“_series”结尾。
+- 因子输出约定：
+ - 安装标准化因子：`*_mounted_normalized_factors.parquet`加上匹配的`.xlsx`
+ - 信号：`*_signal_ls.parquet`加上匹配的`.xlsx`
+ - 每个因素的位置：`{factor_id}_position.xlsx`
+- 因子矩阵列应使用“factor_id”，而不是显示名称或“代码”。
+- 更喜欢将新的研究特定模块添加为英文“B_factors/scripts/paper_*.py”文件，然后通过“B_factors/scripts/build_factor_matrix.py”连接它们。
+- 保持“B_factors/scripts/factor_utils.py”中的常见更改向后兼容。
+- 要加中文的注释，每个函数都最好加一下注释
 
 ## Factor Rules To Preserve
 
@@ -162,6 +159,8 @@ Treat these as data/output areas. Do not delete, overwrite, or bulk-regenerate t
 - 如果恢复或调整 `build_factor_matrix.py`，应保留当前 W004 行为，除非用户明确要求修改 W004。W004 应继续使用既有 `factor_id`。
 
 - 文档类任务默认只给建议内容；只有用户明确要求保存时，才写入本地文件。
+
+- 用中文写注释
 
 ----快捷指令包----
 # gfgraph

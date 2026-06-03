@@ -1,0 +1,41 @@
+{
+  "source_excel": "/Users/chloezh/Projects/xlsx_to_jsonl_project/input_excel/factor_factory_template_registry.xlsx",
+  "converted_at": "2026-06-02T19:59:20",
+  "sheets": {
+    "working_multiple_factors_plan_c": {
+      "row_count": 4,
+      "columns": [
+        "function_target",
+        "function_template",
+        "fake_code",
+        "notes"
+      ],
+      "records": [
+        {
+          "function_target": "水平高低A",
+          "function_template": "rolling_rank_level",
+          "fake_code": "def factor_rolling_rank_level(sub_1, params):\n    lookback_window = params.get(\"lookback_window\", 756)\n    center = params.get(\"center\", 0.5)\n    direction = params.get(\"direction\", -1)\n\n    rank = rolling_quantile_rank(sub_1, window=lookback_window)\n    factor = direction * (rank - center)\n    return factor",
+          "notes": "rank 越高，说明利率处在越高分位。\ndirection = -1 时：\n利率高分位 → factor 为负 → 推荐价值\n利率低分位 → factor 为正 → 推荐成长"
+        },
+        {
+          "function_target": "趋势方向A",
+          "function_template": "ma_spread_rank",
+          "fake_code": "def factor_ma_spread_rank(sub_1, params):\n    short_window = params.get(\"short_window\", 20)\n    long_window = params.get(\"long_window\", 120)\n    rank_window = params.get(\"rank_window\", 756)\n    center = params.get(\"center\", 0.5)\n    direction = params.get(\"direction\", -1)\n\n    short_ma = sub_1.rolling(short_window).mean()\n    long_ma = sub_1.rolling(long_window).mean()\n    spread = short_ma - long_ma\n\n    rank = rolling_quantile_rank(spread, window=rank_window)\n    factor = direction * (rank - center)\n    return factor",
+          "notes": "short_ma - long_ma 越高，说明利率上行趋势越强。\ndirection = -1 时：\n利率上行趋势强 → factor 为负 → 推荐价值\n利率下行趋势强 → factor 为正 → 推荐成长"
+        },
+        {
+          "function_target": "趋势方向B",
+          "function_template": "ols_slope_rank",
+          "fake_code": "def rolling_ols_slope(series, window):\n    import numpy as np\n\n    def ols_slope(y):\n        x = np.arange(len(y))\n        return np.polyfit(x, y, 1)[0]\n\n    return series.rolling(window).apply(ols_slope, raw=True)\n\n\ndef factor_ols_slope_rank(sub_1, params):\n    slope_window = params.get(\"slope_window\", 60)\n    rank_window = params.get(\"rank_window\", 756)\n    center = params.get(\"center\", 0.5)\n    direction = params.get(\"direction\", -1)\n\n    slope_series = rolling_ols_slope(sub_1, window=slope_window)\n    rank = rolling_quantile_rank(slope_series, window=rank_window)\n    factor = direction * (rank - center)\n    return factor",
+          "notes": "direction=-1时，OLS斜率高 → 利率上行趋势强 → 贴现率上行压力强 → 成长估值受压 → 因子应偏价值\nOLS斜率低 → 利率下行趋势强 → 贴现率下行压力强 → 成长估值受益 → 因子应偏成长"
+        },
+        {
+          "function_target": "趋势加速度A",
+          "function_template": "slope_accel_quadrant",
+          "fake_code": "def rolling_ols_slope(series, window):\n    import numpy as np\n\n    def ols_slope(y):\n        x = np.arange(len(y))\n        return np.polyfit(x, y, 1)[0]\n\n    return series.rolling(window).apply(ols_slope, raw=True)\n\n\ndef factor_slope_accel_quadrant(sub_1, params):\n    slope_window = params.get(\"slope_window\", 60)\n    diff_window = params.get(\"diff_window\", 20)\n    rank_window = params.get(\"rank_window\", 756)\n    center = params.get(\"center\", 0.5)\n    direction = params.get(\"direction\", -1)\n    weight = params.get(\"accel_weight\", 0.5)\n\n    import numpy as np\n\n    slope = rolling_ols_slope(sub_1, window=slope_window)\n    slope_accel = slope.diff(diff_window)\n\n    s = rolling_quantile_rank(slope, window=rank_window) - center\n    a = rolling_quantile_rank(slope_accel, window=rank_window) - center\n\n    sign_s = np.sign(s)\n    raw = s + sign_s * np.abs(a) * weight\n\n    rank = rolling_quantile_rank(raw, window=rank_window)\n    factor = direction * (rank - center)\n    return factor",
+          "notes": "在 OLS 斜率（趋势方向）基础上叠加加速度信息，识别四个象限：\n加速上行（s>0, a>0）→ factor 最大负 → 强偏价值\n减速上行（s>0, a<0）→ factor 小负   → 弱偏价值\n加速下行（s<0, a<0）→ factor 最大正 → 强偏成长\n减速下行（s<0, a>0）→ factor 小正   → 弱偏成长\n\naccel_weight 控制加速度相对斜率水平的权重，建议范围 [0.3, 0.7]。\ndirection = -1 时：factor > 0 推荐成长，factor < 0 推荐价值。"
+        }
+      ]
+    }
+  }
+}

@@ -25,7 +25,7 @@ import pandas as pd
 SCRIPT_PATH = Path(__file__).resolve()
 PROJECT_ROOT = SCRIPT_PATH.parents[2]
 
-BASE_FACTORS = ["I001", "I002", "I004", "G001", "G002", "G005", "P001", "V001", "V002"]
+BASE_FACTORS = ["I001","I002","I006","G026","G027","P035","V168","V004"]
 
 INPUT_DIR = PROJECT_ROOT / "F_grouping" / "input_COMB"
 USABLE_FACTORS_PATH = PROJECT_ROOT / "F_grouping" / "reference" / "usable_factors.xlsx"
