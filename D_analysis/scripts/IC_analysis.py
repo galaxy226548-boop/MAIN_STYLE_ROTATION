@@ -40,6 +40,7 @@ for import_dir in [PROJECT_ROOT, SY_BASELINE_DIR]:
         sys.path.insert(0, str(import_dir))
 
 from Config import Config  # noqa: E402
+from G_engine.sample_window import SampleWindow, resolve_sample_window  # noqa: E402
 
 
 FACTOR_PATH = PROJECT_ROOT / "B_factors" / "output" / "zhao_mounted_normalized_factors.parquet"
@@ -221,7 +222,7 @@ def load_inputs() -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str]]:
     return factor_df, market_df, factor_signal_types
 
 
-def prepare_market_targets(market_df: pd.DataFrame) -> pd.DataFrame:
+def prepare_market_targets(market_df: pd.DataFrame, sample_window: SampleWindow | None = None) -> pd.DataFrame:
     out = market_df.copy()
     for k in Config.BUCKET_WEEKS:
         out[f"{Config.BUCKET_PREFIX}{k}"] = out.groupby(TRACK_COL)[BASE_TARGET_COL].shift(-(k - 1))
@@ -238,8 +239,12 @@ def prepare_market_targets(market_df: pd.DataFrame) -> pd.DataFrame:
         )
         out[target_col] = out[g_col] - out[v_col]
 
-    all_mask = (out.index >= Config.ALL_START) & (out.index <= Config.ALL_END)
-    return out.loc[all_mask].copy()
+    if sample_window is None:
+        sample_window = resolve_sample_window(Config, sample="all")
+
+    # 样本内外默认日期只在 Config 中维护；这里根据运行参数切分 IC 统计区间。
+    sample_mask = (out.index >= sample_window.start) & (out.index <= sample_window.end)
+    return out.loc[sample_mask].copy()
 
 
 def build_factor_frame(market_df: pd.DataFrame, factor_series: pd.Series) -> pd.DataFrame:
@@ -549,6 +554,9 @@ def parse_args() -> argparse.Namespace:
         action="append",
         help="Factor column to analyze. Can be passed multiple times. Defaults to all columns.",
     )
+    parser.add_argument("--sample", choices=["all", "ins", "oos", "custom"], default="all")
+    parser.add_argument("--start-date", help="Optional sample start date, e.g. 2020-01-01.")
+    parser.add_argument("--end-date", help="Optional sample end date, e.g. 2024-12-31.")
     return parser.parse_args()
 
 
@@ -556,9 +564,16 @@ def main() -> None:
     args = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    sample_window = resolve_sample_window(
+        Config,
+        sample=args.sample,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    )
     factor_df, raw_market_df, factor_signal_types = load_inputs()
-    market_df = prepare_market_targets(raw_market_df)
+    market_df = prepare_market_targets(raw_market_df, sample_window=sample_window)
     track_list = sorted(market_df[TRACK_COL].dropna().astype(int).unique().tolist())
+    print(f"sample: {sample_window.name} ({sample_window.start_text} -> {sample_window.end_text})")
 
     factors = args.factor or factor_df.columns.tolist()
     missing_factors = sorted(set(factors) - set(factor_df.columns))

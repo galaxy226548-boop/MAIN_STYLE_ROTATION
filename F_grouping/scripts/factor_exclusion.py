@@ -13,6 +13,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -27,8 +28,12 @@ IC_SCORE_PATH = PROJECT_ROOT / "D_analysis" / "check_output" / "IC_score.xlsx"
 BACKTESTING_SCORE_PATH = PROJECT_ROOT / "F_grouping" / "reference" / "backtesting_score.xlsx"
 OUTPUT_PATH = PROJECT_ROOT / "F_grouping" / "reference" / "usable_factors.xlsx"
 FACTOR_GENERATED_PATH = PROJECT_ROOT / "B_factors" / "output" / "factor_generated.json"
+FACTOR_SUMMARY_PATH = PROJECT_ROOT / "B_factors" / "reference" / "因子汇总.json"
+BACKTEST_RESULT_ROOT = PROJECT_ROOT / "E_backtesting" / "Result"
 
 IC_FACTOR_COL = "factor_id"
+SIGNAL_ID_COL = "signal_id"
+SORTING_FACTOR_COL = "编号"
 BACKTESTING_FACTOR_COL = "factor_name"
 FACTOR_NAME_COL = "factor_name"
 IC_SCORE_COL = "总分"
@@ -48,6 +53,16 @@ PERCENTAGE_FORMAT_COLS = [
 IC_SCORE_THRESHOLD = 1.5
 BACKTESTING_PASS_THRESHOLD = 3
 LATEST_NAME_ALLOWED_CONFLICT_IDS = {"V001", "V002"}
+SORTING_SAMPLE_NAMES = {"all", "ins", "oos"}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Merge IC scores with backtesting scores and keep usable factors.")
+    parser.add_argument("--ic-score-path", type=Path, default=IC_SCORE_PATH)
+    parser.add_argument("--backtesting-score-path", type=Path, default=BACKTESTING_SCORE_PATH)
+    parser.add_argument("--output-path", type=Path, default=OUTPUT_PATH)
+    parser.add_argument("--factor-generated-path", type=Path, default=FACTOR_GENERATED_PATH)
+    return parser.parse_args()
 
 
 def require_columns(df: pd.DataFrame, columns: list[str], path: Path) -> None:
@@ -56,7 +71,44 @@ def require_columns(df: pd.DataFrame, columns: list[str], path: Path) -> None:
         raise ValueError(f"Missing columns in {path}: {missing_columns}")
 
 
-def load_factor_name_map(factor_generated_path: Path) -> dict[str, str]:
+def load_factor_summary_name_map(factor_summary_path: Path = FACTOR_SUMMARY_PATH) -> dict[str, str]:
+    with factor_summary_path.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+
+    records = payload.get("sheets", {}).get("factors", {}).get("records")
+    if not isinstance(records, list):
+        raise ValueError(f"Expected sheets.factors.records list in {factor_summary_path}")
+
+    names_by_factor_id: dict[str, set[str]] = defaultdict(set)
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        factor_id = record.get("编号")
+        factor_name = record.get("原数据")
+        if factor_id in (None, "") or factor_name in (None, ""):
+            continue
+        names_by_factor_id[str(factor_id)].add(str(factor_name))
+
+    factor_name_map: dict[str, str] = {}
+    conflicts: dict[str, list[str]] = {}
+    for factor_id, names in names_by_factor_id.items():
+        sorted_names = sorted(names)
+        if len(sorted_names) == 1:
+            factor_name_map[factor_id] = sorted_names[0]
+            continue
+        conflicts[factor_id] = sorted_names
+
+    if conflicts:
+        conflict_text = "; ".join(
+            f"{factor_id}: {', '.join(names)}"
+            for factor_id, names in sorted(conflicts.items())
+        )
+        raise ValueError(f"Conflicting factor names in {factor_summary_path}: {conflict_text}")
+
+    return factor_name_map
+
+
+def load_generated_factor_name_map(factor_generated_path: Path) -> dict[str, str]:
     with factor_generated_path.open("r", encoding="utf-8") as file:
         payload = json.load(file)
 
@@ -69,42 +121,103 @@ def load_factor_name_map(factor_generated_path: Path) -> dict[str, str]:
         if not isinstance(record, dict):
             continue
         factor_id = record.get(IC_FACTOR_COL)
-        factor_name = record.get("factor")
+        factor_name = record.get("原数据") or record.get("factor")
         if factor_id is None or factor_name in (None, ""):
             continue
         records_by_factor_id[str(factor_id)].append(record)
 
     factor_name_map: dict[str, str] = {}
-    conflicts: dict[str, list[str]] = {}
     for factor_id, factor_records in records_by_factor_id.items():
-        names = sorted({str(record["factor"]) for record in factor_records})
+        names = sorted({str(record.get("原数据") or record["factor"]) for record in factor_records})
         if len(names) == 1:
             factor_name_map[factor_id] = names[0]
             continue
 
         if factor_id in LATEST_NAME_ALLOWED_CONFLICT_IDS:
             latest_record = max(factor_records, key=lambda record: str(record.get("_generated_at") or ""))
-            factor_name_map[factor_id] = str(latest_record["factor"])
+            factor_name_map[factor_id] = str(latest_record.get("原数据") or latest_record["factor"])
             continue
 
-        conflicts[factor_id] = names
-
-    if conflicts:
-        conflict_text = "; ".join(
-            f"{factor_id}: {', '.join(names)}"
-            for factor_id, names in sorted(conflicts.items())
-        )
-        raise ValueError(f"Conflicting factor names in {factor_generated_path}: {conflict_text}")
+        # factor_generated.json 是生成登记日志；同一编号可能有历史口径冲突。
+        # 冲突编号不作为兜底名称来源，避免阻断 usable_factors 生成。
+        continue
 
     return factor_name_map
 
 
 def add_factor_names(df: pd.DataFrame, factor_generated_path: Path) -> pd.DataFrame:
-    factor_name_map = load_factor_name_map(factor_generated_path)
+    generated_name_map = load_generated_factor_name_map(factor_generated_path)
+    factor_name_map = {
+        **generated_name_map,
+        **load_factor_summary_name_map(),
+    }
     output_df = df.copy()
     factor_names = output_df[IC_FACTOR_COL].astype(str).map(factor_name_map).fillna("")
     output_df.insert(0, FACTOR_NAME_COL, factor_names)
     return output_df
+
+
+def resolve_sorting_sample(output_path: Path) -> str:
+    output_parent_name = output_path.parent.name
+    if output_parent_name in SORTING_SAMPLE_NAMES:
+        return output_parent_name
+    return "ins"
+
+
+def find_single_factors_sorting_files(sample: str) -> list[Path]:
+    candidate_dirs = [
+        BACKTEST_RESULT_ROOT / "I_laboratory" / sample,
+        *sorted(BACKTEST_RESULT_ROOT.glob(f"factor_*/{sample}")),
+    ]
+    sorting_files: list[Path] = []
+    for candidate_dir in candidate_dirs:
+        if not candidate_dir.is_dir():
+            continue
+        sorting_files.extend(sorted(candidate_dir.glob("*single_factors_sorting.xlsx")))
+    return sorting_files
+
+
+def load_single_factors_sorting_df(sample: str) -> pd.DataFrame:
+    sorting_frames: list[pd.DataFrame] = []
+    for sorting_path in find_single_factors_sorting_files(sample):
+        sorting_df = pd.read_excel(sorting_path)
+        require_columns(sorting_df, [SORTING_FACTOR_COL], sorting_path)
+        sorting_df = sorting_df.copy()
+        sorting_df[SORTING_FACTOR_COL] = sorting_df[SORTING_FACTOR_COL].astype(str)
+        sorting_frames.append(sorting_df)
+
+    if not sorting_frames:
+        return pd.DataFrame(columns=[SORTING_FACTOR_COL])
+
+    combined_df = pd.concat(sorting_frames, ignore_index=True)
+    return combined_df.drop_duplicates(subset=[SORTING_FACTOR_COL], keep="first")
+
+
+def append_single_factors_sorting_columns(df: pd.DataFrame, output_path: Path) -> pd.DataFrame:
+    sample = resolve_sorting_sample(output_path)
+    sorting_df = load_single_factors_sorting_df(sample)
+    if sorting_df.empty:
+        return df
+
+    output_df = df.copy()
+    merge_key = SIGNAL_ID_COL if SIGNAL_ID_COL in output_df.columns else IC_FACTOR_COL
+    output_df[merge_key] = output_df[merge_key].astype(str)
+
+    sorting_columns = [column for column in sorting_df.columns if column != SORTING_FACTOR_COL]
+    rename_map = {
+        column: f"{column}_sorting"
+        for column in sorting_columns
+        if column in output_df.columns
+    }
+    sorting_df = sorting_df.rename(columns=rename_map)
+
+    return output_df.merge(
+        sorting_df,
+        how="left",
+        left_on=merge_key,
+        right_on=SORTING_FACTOR_COL,
+        sort=False,
+    ).drop(columns=[SORTING_FACTOR_COL])
 
 
 def keep_best_ic_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -207,12 +320,19 @@ def write_output(df: pd.DataFrame, output_path: Path) -> None:
 
 
 def main() -> None:
-    usable_factors_df = build_usable_factors(IC_SCORE_PATH, BACKTESTING_SCORE_PATH, FACTOR_GENERATED_PATH)
-    write_output(usable_factors_df, OUTPUT_PATH)
+    args = parse_args()
+    ic_score_path = args.ic_score_path.resolve()
+    backtesting_score_path = args.backtesting_score_path.resolve()
+    output_path = args.output_path.resolve()
+    factor_generated_path = args.factor_generated_path.resolve()
 
-    print(f"IC score rows: {len(pd.read_excel(IC_SCORE_PATH))}")
+    usable_factors_df = build_usable_factors(ic_score_path, backtesting_score_path, factor_generated_path)
+    usable_factors_df = append_single_factors_sorting_columns(usable_factors_df, output_path)
+    write_output(usable_factors_df, output_path)
+
+    print(f"IC score rows: {len(pd.read_excel(ic_score_path))}")
     print(f"usable factor rows: {len(usable_factors_df)}")
-    print(f"output saved to: {OUTPUT_PATH}")
+    print(f"output saved to: {output_path}")
 
 
 if __name__ == "__main__":

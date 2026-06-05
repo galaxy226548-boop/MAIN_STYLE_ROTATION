@@ -1,6 +1,6 @@
 """海外相关风格轮动因子。
 
-本文件负责生成 O011-O025 这组 overseaFactors 因子：
+本文件负责生成 overseaFactors 因子：
 1. 从计划表或历史登记文件读取每个因子的 metadata；
 2. 按 factor_id 计算各自的原始时间序列；
 3. 挂载到项目统一交易日历，并输出标准化因子和 long/short 信号。
@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -48,16 +49,18 @@ from factor_transforms import (
 # 输出前缀会写入 B_factors/output，并用于 factor_generated.json 的登记筛选。
 OUTPUT_PREFIX = "overseaFactors"
 PLAN_PATH = PROJECT_ROOT / "B_factors" / "reference" / "working_multiple_factors_plan.json"
+C_FACTOR_REGISTRY_PATH = PROJECT_ROOT / "B_factors" / "reference" / "factor_C.json"
 
 # 本模块当前实际实现的因子范围。新增或删除因子时，通常需要同步调整：
 # 1. FACTOR_IDS；2. _record_with_actual_fields；3. _calc_oversea_factor。
 FACTOR_IDS = [
     "O011",
-    "O012",
-    "O013",
-    "O014",
+    "C035",
+    "C036",
+    "C037",
+    "C038",
+    "C039",
     "O015",
-    "O016",
     "O017",
     "O018",
     "O019",
@@ -68,6 +71,8 @@ FACTOR_IDS = [
     "O024",
     "O025",
 ]
+FACTOR_C_IDS = ["C035", "C036", "C037", "C038", "C039"]
+FACTOR_O_IDS = [factor_id for factor_id in FACTOR_IDS if factor_id.startswith("O")]
 
 VIX_FILE = "VIX.GI-行情统计-20260509.xlsx"
 SPX_FILE = "SPX.GI-行情统计-20260519.xlsx"
@@ -77,6 +82,7 @@ OVERSEA_DAILY_TABLE = "factorO_daily.parquet"
 OVERSEA_MONTHLY_TABLE = "factorO_monthly.parquet"
 
 HKD_SPOT_COL = "即期汇率定盘价:美元兑港元"
+USDCNY_MID_COL = "中间价:美元兑人民币"
 USDCNH_COL = "即期汇率:美元兑离岸人民币(USDCNH)"
 HKD_SWAP_1M_COL = "掉期点:美元兑港元:1个月"
 HIBOR_1M_COL = "HIBOR:1个月"
@@ -91,19 +97,21 @@ ANNUAL_TRADING_DAYS = 252
 def _load_plan_records() -> list[dict[str, object]]:
     """读取并整理本模块因子的 metadata 记录。
 
-    优先读 reference 目录下的 working_multiple_factors_plan.json；如果计划表不存在，
-    则回退到 output/factor_generated.json 中已经登记过的 overseaFactors 记录。
-    这里不计算因子，只保证后续挂载和登记所需的字段完整。
+    O 类因子沿用原 overseaFactors 记录；C035-C039 使用 factor_C.json 中的
+    因子定义，避免重命名后丢失 event/state 类型。
     """
-    return load_plan_or_generated_records(
+    records = load_plan_or_generated_records(
         plan_path=PLAN_PATH,
         generated_path=PROJECT_ROOT / "B_factors" / "output" / "factor_generated.json",
         project_root=PROJECT_ROOT,
-        factor_ids=FACTOR_IDS,
+        factor_ids=FACTOR_O_IDS,
         output_prefix=OUTPUT_PREFIX,
         record_adjuster=_record_with_actual_fields,
         minimal_record_factory=_minimal_fallback_record,
     )
+    records.extend(_load_factor_c_records())
+    by_factor_id = {str(record["factor_id"]): record for record in records}
+    return [by_factor_id[factor_id] for factor_id in FACTOR_IDS]
 
 
 def _minimal_fallback_record(factor_id: str) -> dict[str, object]:
@@ -121,6 +129,41 @@ def _minimal_fallback_record(factor_id: str) -> dict[str, object]:
     }
 
 
+def _load_factor_c_records() -> list[dict[str, object]]:
+    """从 factor_C.json 读取 C035-C038 的 metadata。"""
+    if not C_FACTOR_REGISTRY_PATH.exists():
+        raise FileNotFoundError(f"Cannot find factor C registry: {C_FACTOR_REGISTRY_PATH}")
+
+    payload = json.loads(C_FACTOR_REGISTRY_PATH.read_text(encoding="utf-8"))
+    source_file = str(C_FACTOR_REGISTRY_PATH.relative_to(PROJECT_ROOT))
+    wanted = set(FACTOR_C_IDS)
+    records: list[dict[str, object]] = []
+    for sheet_name, sheet_meta in payload.get("sheets", {}).items():
+        for record in sheet_meta.get("records", []):
+            factor_id = str(record.get("编号") or "")
+            if factor_id not in wanted:
+                continue
+            item = dict(record)
+            item["paper_id"] = OUTPUT_PREFIX
+            item["factor_id"] = factor_id
+            item["signal_type"] = str(item.get("数据频率") or "state").strip().lower()
+            item["docu"] = Path(str(item.get("数据路径") or "")).name
+            item["data_field"] = item.get("字段名")
+            item["factor"] = item.get("原数据")
+            item["calc_method"] = item.get("测度目标")
+            item["progress"] = "done"
+            item["_source_file"] = source_file
+            item["_source_sheet"] = sheet_name
+            _append_note(item, "本记录由 overseaFactors.py 按 factor_C.json 的 C 编号生成。")
+            records.append(item)
+
+    found = {str(record["factor_id"]) for record in records}
+    missing = [factor_id for factor_id in FACTOR_C_IDS if factor_id not in found]
+    if missing:
+        raise ValueError(f"{C_FACTOR_REGISTRY_PATH.name} missing factor C records: {missing}")
+    return sorted(records, key=lambda record: FACTOR_C_IDS.index(str(record["factor_id"])))
+
+
 def _record_with_actual_fields(record: dict[str, object]) -> dict[str, object]:
     """补齐/修正实际运行所需字段。
 
@@ -135,7 +178,7 @@ def _record_with_actual_fields(record: dict[str, object]) -> dict[str, object]:
         record["docu"] = OVERSEA_DAILY_TABLE
     elif factor_id == "O025":
         record["docu"] = OVERSEA_MONTHLY_TABLE
-    elif factor_id in {"O012", "O013", "O014", "O016"}:
+    elif factor_id == "O016":
         record["docu"] = EXCHANGE_TABLE
 
     if factor_id in {"O011", "O016", "O017"}:
@@ -201,6 +244,14 @@ def _complete_month_end_values(series: pd.Series) -> pd.Series:
     return month_end_values
 
 
+def _monthly_average_pct_change(series: pd.Series) -> pd.Series:
+    """按自然月求均值并计算月度环比，索引用月末事件日。"""
+    s = series.astype("float64").dropna().sort_index()
+    monthly_avg = s.groupby(s.index.to_period("M")).mean()
+    monthly_avg.index = monthly_avg.index.to_timestamp(how="end").normalize()
+    return monthly_avg / monthly_avg.shift(1) - 1
+
+
 def _calc_oversea_factor(factor_id: str) -> pd.Series:
     """按 factor_id 计算单个海外因子的原始源序列。
 
@@ -215,7 +266,13 @@ def _calc_oversea_factor(factor_id: str) -> pd.Series:
         vix_zscore = calc_rolling_zscore(vix_ret_20d, window=255, min_periods=120)
         return -np.sign(vix_zscore) * (np.abs(vix_zscore) - 1).clip(lower=0)
 
-    if factor_id == "O012":
+    if factor_id == "C035":
+        # 美元兑人民币中间价按自然月均值计算环比，再乘 -1；
+        # 该因子按月末事件口径挂载。
+        usdcny_mid = _positive_series(read_prepared_series(EXCHANGE_TABLE, USDCNY_MID_COL)).sort_index(ascending=True)
+        return _monthly_average_pct_change(usdcny_mid) * -1
+
+    if factor_id == "C036":
         # 港币联系汇率区间压力：20 日均值低于 7.77 或高于 7.83 时产生方向信号，
         # 中间区间为 0，缺失数据保持 NaN。
         hkd_spot = _positive_series(read_prepared_series(EXCHANGE_TABLE, HKD_SPOT_COL))
@@ -226,7 +283,7 @@ def _calc_oversea_factor(factor_id: str) -> pd.Series:
         signal.loc[spot_mean_20d.isna()] = np.nan
         return signal
 
-    if factor_id == "O013":
+    if factor_id == "C037":
         # 美元兑港元 1M 掉期点的月末事件信号：先只保留完整月份月末值，
         # 再判断是否突破过去约一年均值的 1 倍标准差。
         swap_points = _complete_month_end_values(read_prepared_series(EXCHANGE_TABLE, HKD_SWAP_1M_COL))
@@ -237,19 +294,13 @@ def _calc_oversea_factor(factor_id: str) -> pd.Series:
             std_multiplier=1.0,
         )
 
-    if factor_id == "O014":
+    if factor_id == "C038":
         # USDCNH 20 日涨跌幅超过 1.5% 后才计入；乘 -1 表示人民币贬值压力偏负。
         usdcnh = _positive_series(read_prepared_series(EXCHANGE_TABLE, USDCNH_COL)).sort_index(ascending=True)
         usdcnh_ret_20d = usdcnh / usdcnh.shift(20) - 1
         return _signed_excess_score(usdcnh_ret_20d, 0.015) * -1
 
-    if factor_id == "O015":
-        # BDI 航运景气度突破信号。这里使用 120 日窗口和 2 倍标准差阈值，
-        # 再乘 -1 以匹配当前研究方向设定。
-        bdi = read_prepared_series(OVERSEA_DAILY_TABLE, BDI_COL)
-        return _rolling_std_breakout(bdi, window=120, min_periods=120, std_multiplier=2.0) * -1
-
-    if factor_id == "O016":
+    if factor_id == "C039":
         # 用港币即期汇率、HIBOR 1M、SOFR 1M 估算理论掉期点，
         # 再计算约一年窗口的标准差突破。
         hkd_spot = _positive_series(read_prepared_series(EXCHANGE_TABLE, HKD_SPOT_COL))
@@ -262,6 +313,12 @@ def _calc_oversea_factor(factor_id: str) -> pd.Series:
             min_periods=ANNUAL_TRADING_DAYS,
             std_multiplier=1.0,
         )
+
+    if factor_id == "O015":
+        # BDI 航运景气度突破信号。这里使用 120 日窗口和 2 倍标准差阈值，
+        # 再乘 -1 以匹配当前研究方向设定。
+        bdi = read_prepared_series(OVERSEA_DAILY_TABLE, BDI_COL)
+        return _rolling_std_breakout(bdi, window=120, min_periods=120, std_multiplier=2.0) * -1
 
     if factor_id == "O017":
         # 纳指相对标普的 20 日超额收益，超过 3% 后计入方向信号。

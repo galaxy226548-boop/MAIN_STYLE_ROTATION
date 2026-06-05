@@ -374,6 +374,7 @@ def build_factor_matrix(
     signal_group: str,
     binary_group: str,
     forward_fill_source_signals: bool = FORWARD_FILL_SOURCE_SIGNALS,
+    custom_groups: OrderedDict[str, list[str]] | None = None,
 ) -> tuple[pd.DataFrame, OrderedDict[str, list[str]], list[str]]:
     """Compute first-letter grouped means, final continuous signal, and binary signal.
 
@@ -385,13 +386,14 @@ def build_factor_matrix(
     if forward_fill_source_signals:
         source_numeric = source_numeric.ffill()
 
-    groups = group_columns_by_first_letter(source_numeric.columns)
+    # 批量组合可传入 Excel 列名分组；交互脚本默认仍按首字母分组。
+    groups = custom_groups if custom_groups is not None else group_columns_by_first_letter(source_numeric.columns)
     if not groups:
         warnings.append("No non-empty source column names were found; output matrices will be empty.")
 
     first_level_df = pd.DataFrame(index=source_numeric.index)
-    for letter, columns in groups.items():
-        factor_col = f"{base_group}_{letter}{SIGNAL_SUFFIX}"
+    for group_name, columns in groups.items():
+        factor_col = f"{base_group}_{group_name}{SIGNAL_SUFFIX}"
         non_null_count_by_row = source_numeric[columns].notna().sum(axis=1)
         first_level_df[factor_col] = source_numeric[columns].mean(axis=1, skipna=True)
         if non_null_count_by_row.eq(0).any():

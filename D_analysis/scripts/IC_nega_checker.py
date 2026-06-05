@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Re-check every IC analysis file and rewrite both output markdown files.",
     )
+    parser.add_argument("--sample", choices=["all", "ins", "oos"], default="all")
     return parser.parse_args()
 
 
@@ -101,6 +102,14 @@ def has_negative_doubt(path: Path) -> bool:
     return False
 
 
+def path_matches_sample(path: Path, input_dir: Path, sample: str) -> bool:
+    relative_parts = path.relative_to(input_dir).parts
+    sample_parts = {"all", "ins", "oos"}
+    if sample == "all":
+        return ("all" in relative_parts) or not any(part in sample_parts for part in relative_parts)
+    return sample in relative_parts
+
+
 def main() -> None:
     args = parse_args()
     input_dir = args.input_dir.resolve()
@@ -119,6 +128,8 @@ def main() -> None:
     errors: list[str] = []
 
     for path in sorted(input_dir.rglob(f"*{ANALYSIS_SUFFIX}")):
+        if not path_matches_sample(path, input_dir, args.sample):
+            continue
         factor_id = factor_id_from_path(path)
         if not args.rebuild and factor_id in already_seen:
             continue
@@ -237,7 +248,7 @@ def export_nega_doubt_factor_records(doubt_path: Path) -> None:
     from datetime import datetime, timezone
 
     generated_path = PROJECT_ROOT / "B_factors" / "output" / "factor_generated.json"
-    output_path = PROJECT_ROOT / "D_analysis" / "check_output" / "nega_doubt_factors.json"
+    output_path = doubt_path.parent / "nega_doubt_factors.json"
 
     if not doubt_path.exists():
         print(f"Nega doubt factor export skipped: {doubt_path} does not exist")

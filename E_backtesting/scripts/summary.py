@@ -79,7 +79,6 @@ def build_track_summary_table(
         ann_vol_excess
         max_dd_excess
         sharpe_excess
-        information_ratio
         monthly_win_rate
         payoff_ratio
         calmar_ratio
@@ -163,14 +162,8 @@ def build_track_summary_table(
 
         max_dd_excess = calc_max_drawdown(excess_nav)
 
-        sharpe_excess = calc_sharpe_ratio(
-            ret_series=period_ret_excess,
-            holding_days_series=strategy_sub_df["holding_days"],
-            rf=rf,
-            annual_days=annual_days
-        )
-
-        information_ratio = calc_information_ratio(
+        # 超额收益已经是相对基准的主动收益，不再额外扣减无风险利率。
+        sharpe_excess = calc_information_ratio(
             excess_ret_series=period_ret_excess,
             holding_days_series=strategy_sub_df["holding_days"],
             annual_days=annual_days
@@ -216,7 +209,6 @@ def build_track_summary_table(
             "ann_vol_excess": ann_vol_excess,
             "max_dd_excess": max_dd_excess,
             "sharpe_excess": sharpe_excess,
-            "information_ratio": information_ratio,
             "monthly_win_rate": monthly_win_rate,
             "payoff_ratio": payoff_ratio,
             "period_win_rate": period_win_rate,
@@ -295,7 +287,6 @@ def build_track_summary_table(
             "ann_vol_excess",
             "max_dd_excess",
             "sharpe_excess",
-            "information_ratio",
             "monthly_win_rate",
             "payoff_ratio",
             "period_win_rate",

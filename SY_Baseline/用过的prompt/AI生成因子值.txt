@@ -1,0 +1,24 @@
+每一行都有一个因子，分辨不同因子的方法是可以看 code，应该没有两个是一样的。
+
+1. Signal Type
+   分为 event 和 state，在你的代码中无需涉及；bar的数值在你的代码里也无需涉及。
+
+2. DOCU
+   列出的是该因子的数据源文件，即源自哪个文件里的哪一列。
+   需要确认源数据中是否包含“%”，如果有“%”就意味着需要/100，否则不动；这部分的逻辑之前jupyter notebook里应该已经实现过，可以参考代码，避免创新同功能的代码。
+
+3. Condition
+   (a) Condition 里面可能会有 sub1，也会有 sub2 出现。
+   (b) 如果有 sub2，可以看前面 DOCU 里面有几个逗号：如果有一个逗号，说明有两个变量；如果有两个逗号，就有三个变量。
+   (c) 它们按顺序对应，前面的变量是 sub1，后面的是 sub2。
+   (d) 使用前，需要先对sub1和sub2进行sort_index；sub1和sub2的时间都需要保存，不允许用left等合并方式漏掉数据。
+
+4. 计算逻辑
+   (a) Rolling sum：滚动 12 期数据的加和。
+   (b) Group by average：按月取平均值。
+   (c) Rolling_quantile：滚动分位数。
+   (d) 可以参看Discount.xlsx的第二个sheet，有介绍一些函数设置；这些函数设置应该都已在目标文件jupyter notebook中已有的函数、src文件夹中factor_utils.py里已有的函数中完成设置，如有缺漏请补充。
+   (e)阅读目标Jupyter notebook中已有的函数、src文件夹中factor_utils.py里已有的函数，如有类似功能需求，优先调用已有的函数，避免新增函数。若有新增函数，需在Discount.xlsx的第二个sheet中换行新增说明。
+
+5. Bar
+   在因子挂载部分放置的一个数值。

@@ -32,6 +32,7 @@ for path in (PROJECT_ROOT, SY_BASELINE_DIR, SCRIPT_DIR):
         sys.path.insert(0, path_str)
 
 from Config import Config  # noqa: E402
+from G_engine.sample_window import SampleWindow, resolve_sample_window  # noqa: E402
 from engine import calc_pre_trade_actual_weight, run_single_track_backtest, weights_are_different  # noqa: E402
 from nav import build_single_track_daily_nav  # noqa: E402
 from returns import to_simple_return  # noqa: E402
@@ -58,6 +59,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-path", type=Path, default=DEFAULT_DATA_PATH)
     parser.add_argument("--benchmark-position-path", type=Path, default=DEFAULT_BENCHMARK_POSITION_PATH)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--sample", choices=["all", "ins", "oos", "custom"], default="all")
+    parser.add_argument("--start-date", help="Optional sample start date, e.g. 2020-01-01.")
+    parser.add_argument("--end-date", help="Optional sample end date, e.g. 2024-12-31.")
     return parser.parse_args()
 
 
@@ -145,7 +149,12 @@ def load_inputs(
     return position_df, market_df, data_df, benchmark_position_df
 
 
-def build_work_df(market_df: pd.DataFrame, position_df: pd.DataFrame, factor_col: str) -> pd.DataFrame:
+def build_work_df(
+    market_df: pd.DataFrame,
+    position_df: pd.DataFrame,
+    factor_col: str,
+    sample_window: SampleWindow | None = None,
+) -> pd.DataFrame:
     cols_to_keep = [
         TRACK_COL,
         "fwd_ret_g",
@@ -161,8 +170,12 @@ def build_work_df(market_df: pd.DataFrame, position_df: pd.DataFrame, factor_col
     if missing_cols:
         raise KeyError(f"market_df is missing required columns: {missing_cols}")
 
-    all_mask = (market_df.index >= Config.ALL_START) & (market_df.index <= Config.ALL_END)
-    work_df = market_df.loc[all_mask, cols_to_keep].copy().sort_index()
+    if sample_window is None:
+        sample_window = resolve_sample_window(Config, sample="all")
+
+    # 样本内外默认日期只在 Config 中维护；这里根据运行参数切分实际回测区间。
+    sample_mask = (market_df.index >= sample_window.start) & (market_df.index <= sample_window.end)
+    work_df = market_df.loc[sample_mask, cols_to_keep].copy().sort_index()
     missing_position_dates = work_df.index.difference(position_df.index)
     if len(missing_position_dates) > 0:
         examples = missing_position_dates[:5].tolist()
@@ -768,6 +781,12 @@ def main() -> None:
     data_path = resolve_project_path(args.data_path)
     benchmark_position_path = resolve_project_path(args.benchmark_position_path)
     output_root = resolve_project_path(args.output_root)
+    sample_window = resolve_sample_window(
+        Config,
+        sample=args.sample,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    )
 
     factor_col = infer_factor_col(position_file)
     trans_fee = float(Config.TRANS_FEE)
@@ -781,7 +800,12 @@ def main() -> None:
         benchmark_position_path=benchmark_position_path,
     )
 
-    work_df = build_work_df(market_df=market_df, position_df=position_df, factor_col=factor_col)
+    work_df = build_work_df(
+        market_df=market_df,
+        position_df=position_df,
+        factor_col=factor_col,
+        sample_window=sample_window,
+    )
     track_list = sorted(work_df[TRACK_COL].dropna().astype(int).unique())
     if not track_list:
         raise ValueError("No valid track_id values found in work_df")
@@ -904,6 +928,7 @@ def main() -> None:
 
     print(f"factor: {factor_col}")
     print(f"position file: {position_file}")
+    print(f"sample: {sample_window.name} ({sample_window.start_text} -> {sample_window.end_text})")
     print(f"trans_fee: {trans_fee}")
     print(f"charge_initial_trade: {charge_initial_trade}")
     print(f"pass_count: {pass_count}")

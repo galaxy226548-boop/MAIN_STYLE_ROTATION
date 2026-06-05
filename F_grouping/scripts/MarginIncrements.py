@@ -69,6 +69,7 @@ for path in (
         sys.path.insert(0, path_str)
 
 from Config import Config  # noqa: E402
+from G_engine.sample_window import SampleWindow, resolve_sample_window  # noqa: E402
 from build_signal_group_binary_interactive import (  # noqa: E402
     build_factor_matrix,
     build_signal_ls_matrix,
@@ -107,6 +108,9 @@ def parse_args() -> argparse.Namespace:
         default=MIN_NON_NULL,
         help="Minimum non-null signal count required for a candidate.",
     )
+    parser.add_argument("--sample", choices=["all", "ins", "oos", "custom"], default="all")
+    parser.add_argument("--start-date", help="Optional sample start date, e.g. 2020-01-01.")
+    parser.add_argument("--end-date", help="Optional sample end date, e.g. 2024-12-31.")
     return parser.parse_args()
 
 
@@ -173,6 +177,7 @@ def run_combo_backtest(
     market_df: pd.DataFrame,
     data_df: pd.DataFrame,
     benchmark_position_df: pd.DataFrame,
+    sample_window: SampleWindow,
 ) -> dict[str, object]:
     position_df = build_factor_position_df(signal_series)
     validate_factor_position_df(combo_name, position_df)
@@ -187,6 +192,7 @@ def run_combo_backtest(
         market_df=market_df,
         position_df=position_df,
         factor_col=combo_name,
+        sample_window=sample_window,
     )
     track_list = sorted(work_df[TRACK_COL].dropna().astype(int).unique())
     if not track_list:
@@ -416,12 +422,13 @@ def write_candidate_outputs(
     candidate_factor: str,
     summary_row: dict[str, object],
     nav_df: pd.DataFrame,
+    output_root: Path,
 ) -> Path | None:
     pass_count = int(summary_row.get("pass_count", 0) or 0)
     if pass_count < MIN_PASS_COUNT_FOR_CANDIDATE_OUTPUT:
         return None
 
-    output_dir = OUTPUT_ROOT / safe_folder_name(
+    output_dir = output_root / safe_folder_name(
         candidate_factor=candidate_factor,
         pass_count=pass_count,
         expectancy=summary_row.get("new_expectancy"),
@@ -467,9 +474,18 @@ def print_top20(summary_df: pd.DataFrame) -> None:
 
 # ========== 4. Main scan ==========
 
-def main() -> None:
+def main() -> tuple[Path, Path]:
     args = parse_args()
     min_non_null = int(args.min_non_null)
+    sample_window = resolve_sample_window(
+        Config,
+        sample=args.sample,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    )
+    sample_output_root = OUTPUT_ROOT / sample_window.name
+    total_output_dir = sample_output_root / "output"
+    graph_output_dir = sample_output_root / "output_graph"
 
     input_files = list_input_files(INPUT_DIR)
     candidates = load_usable_candidates(USABLE_FACTORS_PATH)
@@ -485,13 +501,15 @@ def main() -> None:
     print("base_factors:", BASE_FACTORS)
     print("candidate_count:", len(candidates))
     print("input_dir:", INPUT_DIR)
-    print("output_root:", OUTPUT_ROOT)
+    print("output_root:", sample_output_root)
+    print(f"sample: {sample_window.name} ({sample_window.start_text} -> {sample_window.end_text})")
     print("min_non_null:", min_non_null)
 
     print("\n========== Load backtest inputs ==========")
     market_df, data_df, benchmark_position_df = load_backtest_inputs()
+    # 样本内外默认日期只在 Config 中维护；边际贡献扫描使用同一个窗口。
     daily_market_index = market_df.loc[
-        (market_df.index >= Config.ALL_START) & (market_df.index <= Config.ALL_END)
+        (market_df.index >= sample_window.start) & (market_df.index <= sample_window.end)
     ].index
 
     print("\n========== Build and backtest base once ==========")
@@ -514,6 +532,7 @@ def main() -> None:
         market_df=market_df,
         data_df=data_df,
         benchmark_position_df=benchmark_position_df,
+        sample_window=sample_window,
     )
     base_full_row = get_full_period_metrics(base_result["avg_summary_df"])
     base_nav = base_result["strategy_combo_nav"]
@@ -556,6 +575,7 @@ def main() -> None:
                 market_df=market_df,
                 data_df=data_df,
                 benchmark_position_df=benchmark_position_df,
+                sample_window=sample_window,
             )
             new_full_row = get_full_period_metrics(new_result["avg_summary_df"])
 
@@ -587,6 +607,7 @@ def main() -> None:
                 candidate_factor=candidate_factor,
                 summary_row=row,
                 nav_df=nav_df,
+                output_root=sample_output_root,
             )
             summary_rows.append(row)
             nav_frames.append(nav_df)
@@ -612,9 +633,9 @@ def main() -> None:
             summary_rows.append(empty_summary_row(candidate_factor, skip_reason))
 
     summary_df = sort_summary(pd.DataFrame(summary_rows))
-    TOTAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    summary_path = TOTAL_OUTPUT_DIR / SUMMARY_OUTPUT_NAME
-    nav_path = TOTAL_OUTPUT_DIR / NAV_OUTPUT_NAME
+    total_output_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = total_output_dir / SUMMARY_OUTPUT_NAME
+    nav_path = total_output_dir / NAV_OUTPUT_NAME
     summary_df.to_excel(summary_path, index=False)
     enriched_summary_df = enrich_summary(
         summary_path=summary_path,
@@ -635,10 +656,7 @@ def main() -> None:
     print("\n========== Output files ==========")
     print(f"summary: {summary_path}")
     print(f"nav_curves: {nav_path}")
-
-
-if __name__ == "__main__":
-    main()
+    return nav_path, graph_output_dir
 
 
 # ========== 5. Plot marginal NAV curves ==========
@@ -646,8 +664,8 @@ if __name__ == "__main__":
 import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
-_NAV_CURVES_PATH = TOTAL_OUTPUT_DIR / NAV_OUTPUT_NAME
-_GRAPH_OUTPUT_DIR = OUTPUT_ROOT / "output_graph"
+_NAV_CURVES_PATH = OUTPUT_ROOT / "all" / "output" / NAV_OUTPUT_NAME
+_GRAPH_OUTPUT_DIR = OUTPUT_ROOT / "all" / "output_graph"
 
 
 def plot_marginal_nav_curves(
@@ -707,4 +725,5 @@ def plot_marginal_nav_curves(
 
 
 if __name__ == "__main__":
-    plot_marginal_nav_curves()
+    _nav_path, _graph_output_dir = main()
+    plot_marginal_nav_curves(_nav_path, _graph_output_dir)

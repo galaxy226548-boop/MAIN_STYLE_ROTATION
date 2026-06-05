@@ -44,6 +44,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_OUTPUT_PATH,
         help=f"Output xlsx path. Defaults to {DEFAULT_OUTPUT_PATH}.",
     )
+    parser.add_argument("--sample", choices=["all", "ins", "oos"], default="all")
     return parser.parse_args()
 
 
@@ -102,6 +103,14 @@ def score_file(path: Path) -> dict[str, float | int | str]:
     }
 
 
+def path_matches_sample(path: Path, input_dir: Path, sample: str) -> bool:
+    relative_parts = path.relative_to(input_dir).parts
+    sample_parts = {"all", "ins", "oos"}
+    if sample == "all":
+        return ("all" in relative_parts) or not any(part in sample_parts for part in relative_parts)
+    return sample in relative_parts
+
+
 def main() -> None:
     args = parse_args()
     input_dir = args.input_dir.resolve()
@@ -112,6 +121,8 @@ def main() -> None:
     errors: list[str] = []
 
     for path in sorted(input_dir.rglob(f"*{ANALYSIS_SUFFIX}")):
+        if not path_matches_sample(path, input_dir, args.sample):
+            continue
         try:
             rows.append(score_file(path))
         except Exception as exc:

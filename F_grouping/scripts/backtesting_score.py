@@ -12,6 +12,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import re
 from pathlib import Path
 
@@ -33,6 +34,14 @@ MONTHLY_WIN_RATE_LABEL = "monthly_win_rate"
 PERIOD_WIN_RATE_LABEL = "period_win_rate"
 PAYOFF_RATIO_LABEL = "payoff_ratio"
 EXPECTANCY_LABEL = "expectancy"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Collect rebalance_50 screening scores from backtesting summaries.")
+    parser.add_argument("--input-dir", type=Path, default=INPUT_DIR)
+    parser.add_argument("--output-path", type=Path, default=OUTPUT_PATH)
+    parser.add_argument("--sample", choices=["all", "ins", "oos"], default="all")
+    return parser.parse_args()
 
 
 def parse_factor_name(path: Path) -> str:
@@ -95,11 +104,23 @@ def read_summary_file(path: Path) -> dict[str, object]:
     return row
 
 
-def collect_scores(input_dir: Path) -> tuple[pd.DataFrame, list[str], int]:
+def path_matches_sample(path: Path, input_dir: Path, sample: str) -> bool:
+    relative_parts = path.relative_to(input_dir).parts
+    sample_parts = {"all", "ins", "oos"}
+    if sample == "all":
+        return ("all" in relative_parts) or not any(part in sample_parts for part in relative_parts)
+    return sample in relative_parts
+
+
+def collect_scores(input_dir: Path, sample: str) -> tuple[pd.DataFrame, list[str], int]:
     if not input_dir.exists():
         raise FileNotFoundError(f"Input directory does not exist: {input_dir}")
 
-    paths = sorted(input_dir.rglob(INPUT_FILE_PATTERN))
+    paths = [
+        path
+        for path in sorted(input_dir.rglob(INPUT_FILE_PATTERN))
+        if path_matches_sample(path, input_dir, sample)
+    ]
     records: list[dict[str, object]] = []
     warnings: list[str] = []
 
@@ -146,15 +167,18 @@ def write_output(df: pd.DataFrame, output_path: Path) -> None:
 
 
 def main() -> None:
-    score_df, warnings, scanned_count = collect_scores(INPUT_DIR)
-    write_output(score_df, OUTPUT_PATH)
+    args = parse_args()
+    input_dir = args.input_dir.resolve()
+    output_path = args.output_path.resolve()
+    score_df, warnings, scanned_count = collect_scores(input_dir, args.sample)
+    write_output(score_df, output_path)
 
     print(f"scanned files: {scanned_count}")
     print(f"summary rows: {len(score_df)}")
     print(f"warnings: {len(warnings)}")
     for warning in warnings:
         print(f"WARNING: {warning}")
-    print(f"output saved to: {OUTPUT_PATH}")
+    print(f"output saved to: {output_path}")
 
 
 if __name__ == "__main__":

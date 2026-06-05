@@ -18,11 +18,18 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LOCAL_PYTHON = PROJECT_ROOT / ".venv_mktp" / "bin" / "python"
+SY_BASELINE_DIR = PROJECT_ROOT / "SY_Baseline"
 
 if LOCAL_PYTHON.exists() and Path(sys.prefix).resolve() != (PROJECT_ROOT / ".venv_mktp").resolve():
     os.execv(str(LOCAL_PYTHON), [str(LOCAL_PYTHON), *sys.argv])
 
 import pandas as pd
+
+if str(SY_BASELINE_DIR) not in sys.path:
+    sys.path.insert(0, str(SY_BASELINE_DIR))
+
+from Config import Config
+from sample_window import SampleWindow, resolve_sample_window, sample_cli_kwargs
 
 DEFAULT_SIGNAL_PATH = (
     PROJECT_ROOT
@@ -71,6 +78,9 @@ def parse_args() -> argparse.Namespace:
         action="append",
         help="Factor column to run. Can be passed multiple times. Defaults to all columns.",
     )
+    parser.add_argument("--sample", choices=["all", "ins", "oos", "both", "custom"], default="all")
+    parser.add_argument("--start-date", help="Optional sample start date, e.g. 2020-01-01.")
+    parser.add_argument("--end-date", help="Optional sample end date, e.g. 2024-12-31.")
     return parser.parse_args()
 
 
@@ -198,7 +208,7 @@ def expected_position_files(output_dir: Path, factors: list[str]) -> list[Path]:
     return position_files
 
 
-def run_backtests(position_files: list[Path], output_root: Path) -> None:
+def run_backtests(position_files: list[Path], output_root: Path, sample_window: SampleWindow) -> None:
     for position_file in position_files:
         run_command(
             [
@@ -208,6 +218,7 @@ def run_backtests(position_files: list[Path], output_root: Path) -> None:
                 str(position_file),
                 "--output-root",
                 str(output_root),
+                *sample_cli_kwargs(sample_window),
             ],
             label=f"backtest {position_file.stem.removesuffix('_position')}",
         )
@@ -223,10 +234,16 @@ def load_ic_module():
     return module
 
 
-def run_ic_analysis(factor_path: Path, output_dir: Path, factors: list[str]) -> None:
+def run_ic_analysis(
+    factor_path: Path,
+    output_dir: Path,
+    factors: list[str],
+    sample_window: SampleWindow,
+) -> None:
     print("\n[IC analysis]")
     print(f"factor path: {factor_path}")
     print(f"output dir: {output_dir}")
+    print(f"sample: {sample_window.name} ({sample_window.start_text} -> {sample_window.end_text})")
 
     ic_module = load_ic_module()
     ic_module.FACTOR_PATH = factor_path
@@ -234,7 +251,7 @@ def run_ic_analysis(factor_path: Path, output_dir: Path, factors: list[str]) -> 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     factor_df, raw_market_df, factor_signal_types = ic_module.load_inputs()
-    market_df = ic_module.prepare_market_targets(raw_market_df)
+    market_df = ic_module.prepare_market_targets(raw_market_df, sample_window=sample_window)
     track_list = sorted(market_df[ic_module.TRACK_COL].dropna().astype(int).unique().tolist())
 
     missing_factors = sorted(set(factors) - set(map(str, factor_df.columns)))
@@ -255,16 +272,37 @@ def run_ic_analysis(factor_path: Path, output_dir: Path, factors: list[str]) -> 
     print(f"Done. Output directory: {output_dir}")
 
 
+def resolve_pipeline_sample_windows(args: argparse.Namespace) -> list[SampleWindow]:
+    if args.sample == "both":
+        if args.start_date or args.end_date:
+            raise ValueError("--sample both does not support --start-date or --end-date; edit Config INS/OOS dates instead.")
+        return [
+            resolve_sample_window(Config, sample="ins"),
+            resolve_sample_window(Config, sample="oos"),
+        ]
+    return [
+        resolve_sample_window(
+            Config,
+            sample=args.sample,
+            start_date=args.start_date,
+            end_date=args.end_date,
+        )
+    ]
+
+
 def main() -> None:
     args = parse_args()
     signal_path = resolve_project_path(args.signal_path)
     factor_path = resolve_project_path(args.factor_path)
     run_name = args.run_name or infer_run_name(signal_path)
+    sample_windows = resolve_pipeline_sample_windows(args)
 
     print("factor pipeline")
     print(f"signal path: {signal_path}")
     print(f"factor path: {factor_path}")
     print(f"run name: {run_name}")
+    for sample_window in sample_windows:
+        print(f"sample: {sample_window.name} ({sample_window.start_text} -> {sample_window.end_text})")
 
     signal_df = read_parquet_header(signal_path)
     factor_df = read_parquet_header(factor_path)
@@ -273,14 +311,14 @@ def main() -> None:
 
     position_output_dir = POSITION_OUTPUT_ROOT / run_name
     backtest_output_root = BACKTEST_OUTPUT_ROOT / run_name
-    ic_output_dir = IC_OUTPUT_ROOT / run_name
+    ic_output_root = IC_OUTPUT_ROOT / run_name
 
     if grouping_pair and not args.factor:
         print("F_grouping input pair detected; defaulting to final W factor only.")
     print(f"factors: {', '.join(factors)}")
     print(f"position output dir: {position_output_dir}")
     print(f"backtest output root: {backtest_output_root}")
-    print(f"IC output dir: {ic_output_dir}")
+    print(f"IC output root: {ic_output_root}")
 
     with tempfile.TemporaryDirectory(prefix="factor_pipeline_") as temp_name:
         temp_dir = Path(temp_name)
@@ -295,8 +333,24 @@ def main() -> None:
         position_files = expected_position_files(position_output_dir, factors)
         print(f"generated position files: {len(position_files)}")
 
-        run_backtests(position_files=position_files, output_root=backtest_output_root)
-        run_ic_analysis(factor_path=factor_path, output_dir=ic_output_dir, factors=factors)
+        for sample_window in sample_windows:
+            sample_backtest_output_root = backtest_output_root / sample_window.name
+            sample_ic_output_dir = ic_output_root / sample_window.name
+            print(
+                "\n[sample window] "
+                f"{sample_window.name}: {sample_window.start_text} -> {sample_window.end_text}"
+            )
+            run_backtests(
+                position_files=position_files,
+                output_root=sample_backtest_output_root,
+                sample_window=sample_window,
+            )
+            run_ic_analysis(
+                factor_path=factor_path,
+                output_dir=sample_ic_output_dir,
+                factors=factors,
+                sample_window=sample_window,
+            )
 
     print("\npipeline completed")
 
